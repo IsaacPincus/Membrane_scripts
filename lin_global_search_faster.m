@@ -53,7 +53,7 @@ for ii = 1:length(param_1_vals)
     % use initial stretch to solve for minimum attachment
 
     const = [epsilon, n0, d, R, kD, kappa, alpha_i, N];
-    opts = optimoptions(@fmincon,Algorithm="sqp");
+    opts = optimoptions(@fmincon,'Algorithm',"sqp");
     rng default % For reproducibility
     problem = createOptimProblem("fmincon",...
         x0 = [alpha_A_init, alpha_B_init, phi_init, h_phi_init],...
