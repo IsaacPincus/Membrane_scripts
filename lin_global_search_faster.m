@@ -1,7 +1,7 @@
 clear variables
 
 % constants
-R = 0.05;                  % um
+R = 0.3;                  % um
 sigma = 0.01;          % surface fraction
 d = sqrt(R^2/sigma);    % um
 % phi = pi/12;
@@ -75,22 +75,32 @@ for ii = 1:length(param_1_vals)
     alpha_B_vals_inp = [-0.1, -alpha_i, -1e-3, 0, 1e-3, alpha_i, 0.1];
     phi_vals_inp = deg2rad([0, 5, 20, 45, 60, 85, 90]);
     h_phi_vals_inp = [-2*d,-d/2, -R, 0, R, d/2,2*d];
+    tic
     for aa = 1:length(alpha_A_vals_inp)
-        for bb = 1:length(alpha_B_vals_inp) 
+%         for bb = 1:length(alpha_B_vals_inp) 
             for pp = 1:length(phi_vals_inp)
                 for hh = 1:length(h_phi_vals_inp) 
-                    ptmatrix(aa,bb,pp,hh,1:4) = ...
-                        [alpha_A_vals_inp(aa), alpha_A_vals_inp(bb),...
+                    const_con = [epsilon, n0, d, R, kD, kappa, alpha_i, N,...
+                        alpha_A_vals_inp(aa), phi_vals_inp(pp), h_phi_vals_inp(hh)];
+                    alpha_B_vals_inp(pp,hh,aa) = fzero(@(x) lipid_con_bend_test_A(x, const_con), rand()*0.2-0.1);
+                    ptmatrix(aa,pp,hh,1:4) = ...
+                        [alpha_A_vals_inp(aa), alpha_B_vals_inp(pp,hh,aa),...
                          phi_vals_inp(pp), h_phi_vals_inp(hh)];
+%                     ptmatrix(aa,bb,pp,hh,1:4) = ...
+%                         [alpha_A_vals_inp(aa), alpha_A_vals_inp(bb),...
+%                          phi_vals_inp(pp), h_phi_vals_inp(hh)];
                 end
             end
-        end
+%         end
     end
+    toc
     ptmatrix = reshape(ptmatrix, [numel(ptmatrix)/4, 4]);
     tpoints = CustomStartPointSet(ptmatrix);
     rs = RandomStartPointSet('NumStartPoints',100);
     gs = MultiStart("FunctionTolerance",1e-3, "XTolerance", 1e-3);
+    tic
     [out,fval2,exitflag,output,solutions] = run(gs,problem, {tpoints,rs});
+    toc
 %     [out,fval2,exitflag,output,solutions] = run(gs,problem, {rs});
 %     [out,fval2,exitflag,output,solutions] = run(gs,problem, {tpoints});
     
@@ -182,20 +192,21 @@ end
 % save('kappa_sweep_R300sig01kD300zeta02ai01.mat')
 
 %% plotting solution space
-figure();
-hold on
-ylim([min(cat(1,solutions.Fval))*1.1, 1e-5])
-plot(arrayfun(@(x)x.Fval,solutions),'k*')
-xlabel('Solution number')
-ylabel('Function value')
-% title('Solution Function Values')
+% figure();
+% hold on
+% ylim([min(cat(1,solutions.Fval))*1.1, 1e-5])
+% plot(arrayfun(@(x)x.Fval,solutions),'k*')
+% xlabel('Solution number')
+% ylabel('Function value')
+% % title('Solution Function Values')
 
-figure();
-hold on
+
 % zlim([-1e-3, 1e-5])
 for ii = 1:size(solutions,2)
     X0 = solutions(ii).X0{1};
     X = solutions(ii).X;
+    alpha_A_val(ii) = X(1);
+    alpha_B_val(ii) = X(2);
     phi_val(ii) = X(3);
     h_phi_val(ii) = X(4);
     E_val(ii) = solutions(ii).Fval;
@@ -203,26 +214,135 @@ for ii = 1:size(solutions,2)
     E_dist(ii) = E_val(ii) - fval2;
 %     plot3(rad2deg(phi_val(ii)), h_phi_val(ii), E_val(ii), 'k.')
 end
+% figure();
+subplot(2,2,1)
+hold on
 xlim([0,90])
-ylim([min(cat(1,solutions.Fval))*1.1, 1e-5])
-plot(rad2deg(phi_val), E_val, 'o');
+ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+% plot(rad2deg(phi_val), E_val, 'o');
+scatter(rad2deg(phi_val), E_val,...
+    arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
+    arrayfun(@(x)length(x.X0),solutions), 'filled',...
+    'Marker', 'o');
+c_bar = colorbar;
+c_bar.TickLabelInterpreter = 'latex';
+c_bar.Label.String = 'Multiplicity';
+colormap('winter')
+set(gca,'ColorScale','log')
 % surf(phi_val, h_phi_val, E_val);
 % plot(arrayfun(@(x)x.Fval,solutions),'k*')
 xlabel('$\phi$')
 ylabel('$E$')
-% title('Solution Function Values')
+
+% figure();
+subplot(2,2,2)
+hold on
+xlim([-R, R])
+ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+% plot(rad2deg(phi_val), E_val, 'o');
+scatter(h_phi_val, E_val,...
+    arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
+    arrayfun(@(x)length(x.X0),solutions), 'filled',...
+    'Marker', 'o');
+c_bar = colorbar;
+c_bar.TickLabelInterpreter = 'latex';
+c_bar.Label.String = 'Multiplicity';
+colormap('winter')
+set(gca,'ColorScale','log')
+% surf(phi_val, h_phi_val, E_val);
+% plot(arrayfun(@(x)x.Fval,solutions),'k*')
+xlabel('$h_\phi$')
+ylabel('$E$')
+
+% figure();
+subplot(2,2,3)
+hold on
+xlim([-0.1, 0.1])
+ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+% plot(rad2deg(phi_val), E_val, 'o');
+scatter(alpha_A_val, E_val,...
+    arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
+    arrayfun(@(x)length(x.X0),solutions), 'filled',...
+    'Marker', 'o');
+c_bar = colorbar;
+c_bar.TickLabelInterpreter = 'latex';
+c_bar.Label.String = 'Multiplicity';
+colormap('winter')
+set(gca,'ColorScale','log')
+% surf(phi_val, h_phi_val, E_val);
+% plot(arrayfun(@(x)x.Fval,solutions),'k*')
+xlabel('$\alpha_\mathrm{A}$')
+ylabel('$E$')
+
+% figure();
+subplot(2,2,4)
+hold on
+xlim([-0.1, 0.1])
+ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+% plot(rad2deg(phi_val), E_val, 'o');
+scatter(alpha_B_val, E_val,...
+    arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
+    arrayfun(@(x)length(x.X0),solutions), 'filled',...
+    'Marker', 'o');
+c_bar = colorbar;
+c_bar.TickLabelInterpreter = 'latex';
+c_bar.Label.String = 'Multiplicity';
+colormap('winter')
+set(gca,'ColorScale','log')
+% surf(phi_val, h_phi_val, E_val);
+% plot(arrayfun(@(x)x.Fval,solutions),'k*')
+xlabel('$\alpha_\mathrm{B}$')
+ylabel('$E$')
 
 figure();
 hold on
-ylim([0, 1e-4])
-plot(dist, E_dist, '*')
-xlabel('$\Delta X$')
-ylabel('$\Delta E$')
+xlim([0,90])
+ylim([-R, R])
+zlim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+scatter3(rad2deg(phi_val), h_phi_val, E_val,...
+    arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
+    arrayfun(@(x)length(x.X0),solutions), 'filled',...
+    'Marker', 'o');
+c_bar = colorbar;
+c_bar.TickLabelInterpreter = 'latex';
+c_bar.Label.String = 'Multiplicity';
+colormap('winter')
+set(gca,'ColorScale','log')
+xlabel('$\phi$')
+ylabel('$h_\phi$')
+zlabel('$E$')
+
+% figure();
+% hold on
+% ylim([0, 1e-3])
+% plot(dist, E_dist, '*')
+% xlabel('$\Delta X$')
+% ylabel('$\Delta E$')
+
+% figure();
+% hold on
+% xlabel('Solution number')
+% ylabel('Multiplicity')
+% plot(arrayfun(@(x)length(x.X0),solutions), 'r*')
+
+% %% scatter plot attempt
+% figure();
+% hold on
+% ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+% xlabel('Solution number')
+% ylabel('Function value')
+% scatter(1:length(solutions),arrayfun(@(x)x.Fval,solutions),[],...
+%     arrayfun(@(x)length(x.X0),solutions), 'filled');
+% c_bar = colorbar;
+% c_bar.Label.String = 'Multiplicity';
+% c_bar.TickLabelInterpreter = 'latex';
+% colormap winter
+% % set(gca,'ColorScale','log')
 
 %% get surfaces
-size_phi = 25;
-size_h = 25;
-size_A = 25;
+size_phi = 3;
+size_h = 3;
+size_A = 3;
 phi_test_vals = deg2rad(linspace(eps(1),90-eps(1),size_phi));
 h_phi_test_vals = linspace(-2*R, 2*R, size_h);
 alpha_A_test_vals = linspace(-0.1,0.1,size_A);
@@ -236,7 +356,7 @@ for aa = 1:length(alpha_A_test_vals)
             h_phi_test = h_phi_test_vals(hh);
             const = [epsilon, n0, d, R, kD, kappa, alpha_i, N,...
                 alpha_A_test, phi_test, h_phi_test];
-            alpha_B_test(pp,hh,aa) = fzero(@(x) lipid_con_bend_test(x, const), rand()*0.2-0.1);
+            alpha_B_test(pp,hh,aa) = fzero(@(x) lipid_con_bend_test_A(x, const), rand()*0.2-0.1);
             E_test(pp,hh,aa) = stretch_bend_min([alpha_A_test, alpha_B_test(pp,hh,aa), phi_test, h_phi_test],...
                 [epsilon, n0, d, R, kD, kappa, alpha_i, N]);
         end
@@ -245,7 +365,7 @@ end
 
 %%
 min_phi = 1;
-max_phi = 25;
+max_phi = 24;
 min_h = 1;
 max_h = 25;
 E_nans = E_test;
@@ -254,6 +374,118 @@ figure();
 % zlim([-1,1])
 hold on
 for ii=1:size_A
+% surf(rad2deg(phi_test_vals(min_phi:max_phi)),...
+%     h_phi_test_vals(min_h:max_h),...
+%     squeeze(E_test(min_phi:max_phi,min_h:max_h,1))');
+% surf(rad2deg(phi_test_vals(min_phi:max_phi)),...
+%     h_phi_test_vals(min_h:max_h),...
+%     squeeze(E_nans(min_phi:max_phi,min_h:max_h,ii))');
+surf(rad2deg(phi_test_vals(min_phi:max_phi)),...
+    h_phi_test_vals(min_h:max_h),...
+    squeeze(alpha_B_test(min_phi:max_phi,min_h:max_h,ii))');
+end
+
+% squeeze(alpha_B_test(min_phi:max_phi,min_h:max_h,1))
+
+[min_val, Q] = min(E_nans, [], 'all');
+sE = size(E_nans);
+ct = floor(Q/(sE(1)*sE(2)))+1;
+bt = floor((Q - (ct-1)*(sE(1)*sE(2)))/sE(1))+1;
+at = floor(Q-(ct-1)*(sE(1)*sE(2))-(bt-1)*sE(1));
+
+% phi_min = rad2deg(phi_test_vals(at));
+phi_min = phi_test_vals(at);
+h_phi_min = h_phi_test_vals(bt);
+alpha_A_min = alpha_A_test_vals(ct);
+alpha_B_min = alpha_B_test(at,bt,ct);
+out_approx_min = [alpha_A_min, alpha_B_min, phi_min, h_phi_min];
+% 
+% plot3(rad2deg(phi_min), h_phi_min, min_val, '.g', 'MarkerSize',30)
+% plot3(rad2deg(out(3)), out(4), min_val, '.r', 'MarkerSize',30)
+
+xlabel('$\phi$')
+ylabel('$h_\phi$')
+zlabel('$E$')
+
+%% get surfaces alpha B
+size_phi = 3;
+size_h = 3;
+size_B = 3;
+phi_test_vals = deg2rad(linspace(eps(1),90-eps(1),size_phi));
+h_phi_test_vals = linspace(-2*R, 2*R, size_h);
+min_aB = min(alpha_B_test(alpha_B_test>-0.1), [], 'all');
+max_aB = max(alpha_B_test(alpha_B_test<0.1), [], 'all');
+alpha_B_test_vals = linspace(min_aB,max_aB,size_B);
+alpha_A_test = zeros(size_phi,size_h,size_B);
+E_test = zeros(size_phi,size_h,size_B);
+for bb = 1:length(alpha_B_test_vals)
+    alpha_B_test = alpha_B_test_vals(bb)
+    for pp = 1:length(phi_test_vals)
+        phi_test = phi_test_vals(pp);
+        for hh = 1:length(h_phi_test_vals)
+            h_phi_test = h_phi_test_vals(hh);
+            const = [epsilon, n0, d, R, kD, kappa, alpha_i, N,...
+                alpha_B_test, phi_test, h_phi_test];
+            alpha_A_test(pp,hh,bb) = fzero(@(x) lipid_con_bend_test_B(x, const), [-.5, 1e10]);
+            E_test(pp,hh,bb) = stretch_bend_min([alpha_A_test(pp,hh,bb), alpha_B_test, phi_test, h_phi_test],...
+                [epsilon, n0, d, R, kD, kappa, alpha_i, N]);
+        end
+    end
+end
+
+%% solve for alpha_A
+testing_vals = linspace(0,10,1000);
+alpha_B_test = 0.000011;
+phi_test = deg2rad(eps(1)+30);
+h_phi_test = -0.0006;
+% d = 3;
+const = [epsilon, n0, d, R, kD, kappa, alpha_i, N,...
+            alpha_B_test, phi_test, h_phi_test];
+for bb = 1:length(testing_vals)
+%     alpha_B_test = alpha_B_test_vals(bb);
+    alpha_A_test = testing_vals(bb);
+    S_i = d^2;
+    S_A = 2*pi*R^2*(1-cos(phi_test));
+    func_val(bb) = lipid_con_bend_test_B(alpha_A_test, const);
+end
+
+figure();
+plot(testing_vals, func_val);
+
+fzero(@(x) lipid_con_bend_test_B(x, const), [-.5, 1e10])
+
+%% solve for alpha_B
+testing_vals = linspace(0,0.1,1000);
+alpha_A_test = 0.05;
+phi_test = deg2rad(eps(1)+20);
+h_phi_test = -0.0006;
+% d = 3;
+const = [epsilon, n0, d, R, kD, kappa, alpha_i, N,...
+            alpha_A_test, phi_test, h_phi_test];
+for bb = 1:length(testing_vals)
+%     alpha_B_test = alpha_B_test_vals(bb);
+    alpha_B_test = testing_vals(bb);
+    S_i = d^2;
+    S_A = 2*pi*R^2*(1-cos(phi_test));
+    func_val(bb) = lipid_con_bend_test_A(alpha_B_test, const);
+end
+
+figure();
+plot(testing_vals, func_val);
+
+fzero(@(x) lipid_con_bend_test_A(x, const), [-.5, 1e10])
+
+%%
+min_phi = 1;
+max_phi = 25;
+min_h = 1;
+max_h = 25;
+E_nans = E_test;
+E_nans(alpha_A_test<-0.1|alpha_A_test>0.1) = NaN;
+figure();
+% zlim([-1,1])
+hold on
+for ii=1:size_B
 % surf(rad2deg(phi_test_vals(min_phi:max_phi)),...
 %     h_phi_test_vals(min_h:max_h),...
 %     squeeze(E_test(min_phi:max_phi,min_h:max_h,1))');
@@ -276,6 +508,13 @@ h_phi_min = h_phi_test_vals(bt);
 alpha_A_min = alpha_A_test_vals(ct);
 alpha_B_min = alpha_B_test(at,bt,ct);
 out_approx_min = [alpha_A_min, alpha_B_min, phi_min, h_phi_min];
+
+plot3(rad2deg(phi_min), h_phi_min, min_val, '.g', 'MarkerSize',30)
+plot3(rad2deg(out(3)), out(4), min_val, '.r', 'MarkerSize',30)
+
+xlabel('$\phi$')
+ylabel('$h_\phi$')
+zlabel('$E$')
 
 %% plotting
 init_vals = param_1_vals(1:20);
@@ -550,7 +789,7 @@ function [c,ceq] = lipid_con_phi(y, const)
 end
 
 
-function ceq = lipid_con_bend_test(alpha_B, const)
+function ceq = lipid_con_bend_test_A(alpha_B, const)
 
     epsilon = const(1);
     n0 = const(2);
@@ -561,6 +800,39 @@ function ceq = lipid_con_bend_test(alpha_B, const)
     alpha_i = const(7);
     N = const(8);
     alpha_A = const(9);
+    phi = const(10);
+    h_phi = const(11);
+
+    % problems when phi = 0, so change slightly
+    if phi==0
+        phi = phi+eps(1);
+    end
+    
+    Sigma = kD*alpha_B;
+    r_phi = sin(phi)*R;
+    
+%     r = linspace(r_phi, d/2,N);
+    [~,S_B, ~,~] = free_shape_linear_no_curve(...
+        r_phi, d, phi, kappa, Sigma, h_phi);
+    
+    S_i = d^2;
+    S_A = 2*pi*R^2*(1-cos(phi));
+
+    ceq(1) = S_A./(1+alpha_A)+S_B./(1+alpha_B)-S_i/(1+alpha_i);
+
+end
+
+function ceq = lipid_con_bend_test_B(alpha_A, const)
+
+    epsilon = const(1);
+    n0 = const(2);
+    d = const(3);
+    R = const(4);
+    kD = const(5);
+    kappa = const(6);
+    alpha_i = const(7);
+    N = const(8);
+    alpha_B = const(9);
     phi = const(10);
     h_phi = const(11);
 
