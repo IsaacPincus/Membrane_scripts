@@ -8,6 +8,9 @@ if ~(exist('MyTaskID', 'var')&&exist('NumberOfTasks', 'var'))
     error('Environment variables not set correctly')
 end
 
+% taskIDs count from zero, alter this here
+MyTaskID = MyTaskID + 1;
+
 % generate list of independent variables to run, which should be in the
 % order [epsilon, n0, d, R, kD, kappa, alpha_i] for each row
 R_vals = 0.3;                                   % um
@@ -66,7 +69,7 @@ parameter_set_self = parameter_set(my_set_min:my_set_max, :);
 my_set_size = size(parameter_set_self);
 my_set_length = my_set_size(1);
 
-save_name = sprintf('task%i_results.mat', MyTaskID);
+save_name = sprintf('task%i_results.mat', MyTaskID-1);
 
 %% run batch job for this task set
 for ii = 1:my_set_length
