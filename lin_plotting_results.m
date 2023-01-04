@@ -4,6 +4,8 @@ load_name = 'testing.mat';
 load(load_name);
 
 %% plotting
+close all
+param_1_vals = kappa_vals;
 init_vals = param_1_vals(1:20);
 on = ones(size(init_vals));
 
@@ -113,6 +115,33 @@ yyaxis right
 ylabel('$h_\phi$')
 plot(param_1_vals, h_phi_vals, 'displayname', '$h_\phi$')
 legend
+
+% energy per lipid
+figure('Position',[400,100,800,600]);
+hold on
+axes1 = gca;
+axes1.XScale = 'log';
+axes1.YScale = 'log';
+% ylim([-1e-2, 1e-2])
+xlabel('$\kappa$ (pJ)')
+% xlabel('$\zeta$')
+% xlabel('surface fraction $\sigma$')
+ylabel('Energy per lipid')
+lines = ["-", ":", ":", "--", ":", "--"];
+colours = ['k', 'b', 'r', 'r', 'g', 'g'];
+E_per_lipid([2,3,5],:) = E_all([2,3,5],:)./S_A_vals.*(1+alpha_A_vals);
+E_per_lipid([4,6],:) = E_all([4,6],:)./S_B_vals.*(1+alpha_B_vals);
+for ii=3:6
+    plot(param_1_vals, E_per_lipid(ii,:), ...
+        strcat(colours(ii),lines(ii)))
+end
+% legend({'$E_\mathrm{adhesion,A}$',...
+%     '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
+%     '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
+%     'location', 'best')
+legend({'$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
+    '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
+    'location', 'best')
 
 %% replotting each function
 

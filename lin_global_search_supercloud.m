@@ -1,7 +1,7 @@
 % clear variables
 % 
-% MyTaskID = 1;
-% NumberOfTasks = 12;
+% MyTaskID = 0;
+% NumberOfTasks = 1;
 
 % check that the environment variables have been read in correctly
 if ~(exist('MyTaskID', 'var')&&exist('NumberOfTasks', 'var'))
@@ -115,22 +115,25 @@ for ii = 1:my_set_length
 %     alpha_B_vals_inp = [-0.1, -alpha_i, -1e-3, 0, 1e-3, alpha_i, 0.1];
     phi_vals_inp = deg2rad([0, 5, 20, 45, 60, 85, 90]);
     h_phi_vals_inp = [-2*d,-d/2, -R, 0, R, d/2,2*d];
+    ptmatrix_this_run =...
+            zeros(length(alpha_A_vals_inp),length(phi_vals_inp),...
+                  length(h_phi_vals_inp), 4);
     tic
     for aa = 1:length(alpha_A_vals_inp)
-        aa
         for pp = 1:length(phi_vals_inp)
             for hh = 1:length(h_phi_vals_inp) 
                 const_con = [epsilon, n0, d, R, kD, kappa, alpha_i, N,...
                     alpha_A_vals_inp(aa), phi_vals_inp(pp), h_phi_vals_inp(hh)];
-                alpha_B_vals_inp(pp,hh,aa) = fzero(@(x) lipid_con_bend_test_A(x, const_con), rand()*0.2-0.1);
-                ptmatrix(aa,pp,hh,1:4) = ...
+                alpha_B_vals_inp(pp,hh,aa) =...
+                    fzero(@(x) lipid_con_bend_test_A(x, const_con), rand()*0.2-0.1);
+                ptmatrix_this_run(aa,pp,hh,1:4) = ...
                     [alpha_A_vals_inp(aa), alpha_B_vals_inp(pp,hh,aa),...
                      phi_vals_inp(pp), h_phi_vals_inp(hh)];
             end
         end
     end
     toc
-    ptmatrix = reshape(ptmatrix, [numel(ptmatrix)/4, 4]);
+    ptmatrix = reshape(ptmatrix_this_run, [numel(ptmatrix_this_run)/4, 4]);
     tpoints = CustomStartPointSet(ptmatrix);
     rs = RandomStartPointSet('NumStartPoints',100);
     gs = MultiStart("FunctionTolerance",1e-3, "XTolerance", 1e-3);
