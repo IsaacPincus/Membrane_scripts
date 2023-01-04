@@ -377,12 +377,13 @@ for ii=1:size_A
 % surf(rad2deg(phi_test_vals(min_phi:max_phi)),...
 %     h_phi_test_vals(min_h:max_h),...
 %     squeeze(E_test(min_phi:max_phi,min_h:max_h,1))');
-% surf(rad2deg(phi_test_vals(min_phi:max_phi)),...
-%     h_phi_test_vals(min_h:max_h),...
-%     squeeze(E_nans(min_phi:max_phi,min_h:max_h,ii))');
 surf(rad2deg(phi_test_vals(min_phi:max_phi)),...
     h_phi_test_vals(min_h:max_h),...
+    squeeze(E_nans(min_phi:max_phi,min_h:max_h,ii))',...
     squeeze(alpha_B_test(min_phi:max_phi,min_h:max_h,ii))');
+% surf(rad2deg(phi_test_vals(min_phi:max_phi)),...
+%     h_phi_test_vals(min_h:max_h),...
+%     squeeze(alpha_B_test(min_phi:max_phi,min_h:max_h,ii))');
 end
 
 % squeeze(alpha_B_test(min_phi:max_phi,min_h:max_h,1))
@@ -400,8 +401,14 @@ alpha_A_min = alpha_A_test_vals(ct);
 alpha_B_min = alpha_B_test(at,bt,ct);
 out_approx_min = [alpha_A_min, alpha_B_min, phi_min, h_phi_min];
 % 
-% plot3(rad2deg(phi_min), h_phi_min, min_val, '.g', 'MarkerSize',30)
-% plot3(rad2deg(out(3)), out(4), min_val, '.r', 'MarkerSize',30)
+plot3(rad2deg(phi_min), h_phi_min, min_val, '.g', 'MarkerSize',30)
+plot3(rad2deg(out(3)), out(4), min_val, '.r', 'MarkerSize',30)
+
+c_bar = colorbar;
+c_bar.TickLabelInterpreter = 'latex';
+c_bar.Label.String = '$\alpha_B$';
+
+set(gca, 'Clim', [0, 0.1])
 
 xlabel('$\phi$')
 ylabel('$h_\phi$')

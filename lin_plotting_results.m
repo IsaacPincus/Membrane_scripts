@@ -171,11 +171,13 @@ for ii = 1:size(solutions,2)
     E_dist(ii) = E_val(ii) - fval2;
 %     plot3(rad2deg(phi_val(ii)), h_phi_val(ii), E_val(ii), 'k.')
 end
+min_energy = min(cat(1,solutions.Fval))*1.1;
+max_energy = 2e-4;
 % figure();
 subplot(2,2,1)
 hold on
 xlim([0,90])
-ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+ylim([min_energy, max_energy])
 % plot(rad2deg(phi_val), E_val, 'o');
 scatter(rad2deg(phi_val), E_val,...
     arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
@@ -195,7 +197,7 @@ ylabel('$E$')
 subplot(2,2,2)
 hold on
 xlim([-R, R])
-ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+ylim([min_energy, max_energy])
 % plot(rad2deg(phi_val), E_val, 'o');
 scatter(h_phi_val, E_val,...
     arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
@@ -215,7 +217,7 @@ ylabel('$E$')
 subplot(2,2,3)
 hold on
 xlim([-0.1, 0.1])
-ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+ylim([min_energy, max_energy])
 % plot(rad2deg(phi_val), E_val, 'o');
 scatter(alpha_A_val, E_val,...
     arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
@@ -235,7 +237,7 @@ ylabel('$E$')
 subplot(2,2,4)
 hold on
 xlim([-0.1, 0.1])
-ylim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+ylim([min_energy, max_energy])
 % plot(rad2deg(phi_val), E_val, 'o');
 scatter(alpha_B_val, E_val,...
     arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
@@ -255,7 +257,7 @@ figure();
 hold on
 xlim([0,90])
 ylim([-R, R])
-zlim([min(cat(1,solutions.Fval))*1.1, 1e-4])
+zlim([min_energy, max_energy])
 scatter3(rad2deg(phi_val), h_phi_val, E_val,...
     arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
     arrayfun(@(x)length(x.X0),solutions), 'filled',...

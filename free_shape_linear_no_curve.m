@@ -43,6 +43,17 @@ if Sigma > 0
         C(3) = h_phi/log(2*r_phi/d);
         C(4) = -h_phi*log(2*r_phi/lambda)/log(d/2/lambda);
 
+        AbsTol = 1e-7;
+        RelTol = 1e-4;
+        
+        %solve for area and energy
+        E_bend = kappa/2*2*pi*integral(bend_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol);
+        E = E_bend + Sigma/2*2*pi*integral(sig_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol);
+        A = 2*pi*integral(area_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol) + d^2*(1-pi/4);
+
     else
         A_c = d/(2*r_phi*lambda)*besselk(1,d/2/lambda) - 1/lambda*besselk(1,r_phi/lambda);
         B_c = -d/(2*r_phi*lambda)*besseli(1,d/2/lambda) + 1/lambda*besseli(1,r_phi/lambda);
@@ -59,6 +70,17 @@ if Sigma > 0
         area_func = @(x) x.*sqrt(1+(C(1)./x+C(3)/lambda*besseli(1,x/lambda)-C(4)/lambda*besselk(1,x/lambda)).^2);
         bend_func = @(x) x.*(C(3)/lambda^2*besseli(0,x/lambda)+C(4)/lambda^2*besselk(0,x/lambda)).^2;
         sig_func = @(x) x.*(C(1)./x+C(3)/lambda*besseli(1,x/lambda)-C(4)/lambda*besselk(1,x/lambda)).^2;
+
+        AbsTol = 1e-7;
+        RelTol = 1e-4;
+        
+        %solve for area and energy
+        E_bend = kappa/2*2*pi*integral(bend_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol);
+        E = E_bend + Sigma/2*2*pi*integral(sig_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol);
+        A = 2*pi*integral(area_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol) + d^2*(1-pi/4);
 
     end
 
@@ -78,24 +100,46 @@ elseif Sigma < 0
     C(1) = C(3)*d/2/lambda*besselj(1,d/2/lambda) + C(4)*d/2/lambda*bessely(1,d/2/lambda);
     C(2) = -C(1)*log(d/2/lambda) - C(3)*besselj(0,d/2/lambda) - C(4)*bessely(0, d/2/lambda);
 
-    area_func = @(x) x.*sqrt(1+(C(1)./x-C(3)/lambda*besselj(1,x/lambda)-C(4)/lambda*bessely(1,x/lambda)).^2);
-    bend_func = @(x) x.*(-C(3)/lambda^2*besselj(0,x/lambda)-C(4)/lambda^2*bessely(0,x/lambda)).^2;
-    sig_func = @(x) x.*(C(1)./x-C(3)/lambda*besselj(1,x/lambda)-C(4)/lambda*bessely(1,x/lambda)).^2;
+    if lambda>5e-2
+
+        area_func = @(x) x.*sqrt(1+(C(1)./x-C(3)/lambda*besselj(1,x/lambda)-C(4)/lambda*bessely(1,x/lambda)).^2);
+        bend_func = @(x) x.*(-C(3)/lambda^2*besselj(0,x/lambda)-C(4)/lambda^2*bessely(0,x/lambda)).^2;
+        sig_func = @(x) x.*(C(1)./x-C(3)/lambda*besselj(1,x/lambda)-C(4)/lambda*bessely(1,x/lambda)).^2;
+
+        AbsTol = 1e-7;
+        RelTol = 1e-4;
+        
+        %solve for area and energy
+        E_bend = kappa/2*2*pi*integral(bend_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol);
+        E = E_bend + Sigma/2*2*pi*integral(sig_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol);
+        A = 2*pi*integral(area_func,r_phi,d/2,...
+            'AbsTol',AbsTol,'RelTol',RelTol) + d^2*(1-pi/4);
+    else
+        N = 1e4;
+        r = linspace(r_phi, d/2, N);
+
+        hderiv = C(1)./r-C(3)/lambda*besselj(1,r/lambda)-C(4)/lambda*bessely(1,r/lambda);
+        lap_h = -C(3)/lambda^2*besselj(0,r/lambda)-C(4)/lambda^2*bessely(0,r/lambda);
+        
+        A = 2*pi*trapz(r, r.*sqrt(1+(hderiv).^2)) + d^2*(1-pi/4);
+        E_bend = kappa/2*2*pi*trapz(r, r.*lap_h.^2);
+        E = E_bend + Sigma/2*2*pi*trapz(r, r.*hderiv.^2);
+    end
 
 end
 
-AbsTol = 1e-7;
-RelTol = 1e-4;
-
-%solve for area and energy
-E_bend = kappa/2*2*pi*integral(bend_func,r_phi,d/2,...
-    'AbsTol',AbsTol,'RelTol',RelTol);
-E = E_bend + Sigma/2*2*pi*integral(sig_func,r_phi,d/2,...
-    'AbsTol',AbsTol,'RelTol',RelTol);
-A = 2*pi*integral(area_func,r_phi,d/2,...
-    'AbsTol',AbsTol,'RelTol',RelTol) + d^2*(1-pi/4);
-
-
+% AbsTol = 1e-7;
+% RelTol = 1e-4;
+% 
+% %solve for area and energy
+% E_bend = kappa/2*2*pi*integral(bend_func,r_phi,d/2,...
+%     'AbsTol',AbsTol,'RelTol',RelTol);
+% E = E_bend + Sigma/2*2*pi*integral(sig_func,r_phi,d/2,...
+%     'AbsTol',AbsTol,'RelTol',RelTol);
+% A = 2*pi*integral(area_func,r_phi,d/2,...
+%     'AbsTol',AbsTol,'RelTol',RelTol) + d^2*(1-pi/4);
 
 
 

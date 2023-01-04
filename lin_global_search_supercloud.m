@@ -1,36 +1,82 @@
-clear variables
+% clear variables
+% 
+% MyTaskID = 1;
+% NumberOfTasks = 12;
 
-% constants
-R = 0.3;                  % um
-sigma = 0.01;          % surface fraction
-d = sqrt(R^2/sigma);    % um
-% phi = pi/12;
-kD  = 300/10^12*1e9;    % picoJ/um^2
-zeta = 0.02;            % dimensionless
-epsilon = -zeta*kD;     % picoJ/um^2
-% epsilon = -1;
-n0 = 1;                 % fraction
-kappa = 1e-19*1e12;     % picoJ
-% kappa = 1e-17*1e12;     % picoJ
-alpha_i = 0.01;        % fraction
-zeta = epsilon*n0/kD;   % dimensionless
-N = 3e3;                % number of points in quadrature
-plotfigs = 0;
-save_name = 'testing.mat';
+% check that the environment variables have been read in correctly
+if ~(exist('MyTaskID', 'var')&&exist('NumberOfTasks', 'var'))
+    error('Environment variables not set correctly')
+end
 
-% param_1_vals = logspace(-21,-15, 60)*1e12;
-% param_1_vals = logspace(-4,0, 40);
-% param_1_vals = logspace(-3,-1, 1);
-param_1_vals = 0.02;
+% generate list of independent variables to run, which should be in the
+% order [epsilon, n0, d, R, kD, kappa, alpha_i] for each row
+R_vals = 0.3;                                   % um
+sigma = 0.01;                                   % surface fraction
+d_vals = sqrt(R_vals.^2/sigma);                 % um
+kD_vals = 300/10^12*1e9;                        % picoJ/um^2
+zeta = 0.02;                                    % dimensionless
+epsilon_vals = -zeta*kD_vals;                        % picoJ/um^2
+n0_vals = 1;                                    % fraction
+kappa_vals = logspace(-21,-15, 12)*1e12;         % picoJ
+% kappa_vals = logspace(-21,-15, 60)*1e12;
+alpha_i_vals = 0.01;                            % fraction
+% other constants
+N = 3e3;
 
-for ii = 1:length(param_1_vals)
-%     kappa = param_1_vals(ii);
-%     zeta = param_1_vals(ii);
-%     epsilon = -zeta*kD;     % picoJ/um^2
-%     kD = param_1_vals(ii);
-%     kappa = 3.333e-7*kD;
-    sigma = param_1_vals(ii);
-    d = sqrt(R^2/sigma);    % um
+ii = 0;
+for rr = 1:length(R_vals)
+    for dd = 1:length(d_vals)
+        for kk = 1:length(kD_vals)
+            for ee = 1:length(epsilon_vals)
+                for nn = 1:length(n0_vals)
+                    for pp = 1:length(kappa_vals)
+                        for aa = 1:length(alpha_i_vals)
+                            ii = ii+1;
+                            parameter_set(ii, 1:7) = [epsilon_vals(ee),...
+                                n0_vals(nn),...
+                                d_vals(dd),...
+                                R_vals(rr),...
+                                kD_vals(kk),...
+                                kappa_vals(pp),...
+                                alpha_i_vals(aa)];
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+% split up job between task IDs
+size_parameter_set = size(parameter_set);
+total_parameter_sets = size_parameter_set(1);
+min_sets_per_job = floor(total_parameter_sets/NumberOfTasks);
+extra_sets = mod(total_parameter_sets, NumberOfTasks);
+if MyTaskID <= extra_sets
+    my_set_min = (min_sets_per_job+1)*(MyTaskID-1)+1
+    my_set_max = (min_sets_per_job+1)*(MyTaskID)
+else
+    my_set_min = (min_sets_per_job+1)*(extra_sets) ...
+        + min_sets_per_job*(MyTaskID-extra_sets-1) + 1
+    my_set_max = (min_sets_per_job+1)*(extra_sets) ...
+        + min_sets_per_job*(MyTaskID-extra_sets)
+end
+parameter_set_self = parameter_set(my_set_min:my_set_max, :);
+my_set_size = size(parameter_set_self);
+my_set_length = my_set_size(1);
+
+save_name = sprintf('task%i_results.mat', MyTaskID);
+
+%% run batch job for this task set
+for ii = 1:my_set_length
+    epsilon = parameter_set_self(ii, 1);
+    n0 = parameter_set_self(ii, 2);
+    d = parameter_set_self(ii, 3);
+    R = parameter_set_self(ii, 4);
+    kD = parameter_set_self(ii, 5);
+    kappa = parameter_set_self(ii, 6);
+    alpha_i = parameter_set_self(ii, 7);
 
     % solve microplastics for initial stretch of A and B
     options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e4);
@@ -52,10 +98,9 @@ for ii = 1:length(param_1_vals)
     E_total_init = E_adhesion_init+E_stretch_A_init+E_stretch_B_init;
     
     % use initial stretch to solve for minimum attachment
-
     const = [epsilon, n0, d, R, kD, kappa, alpha_i, N];
     opts = optimoptions(@fmincon,'Algorithm',"sqp");
-    rng default % For reproducibility
+%     rng default % For reproducibility
     problem = createOptimProblem("fmincon",...
         'x0', [alpha_A_init, alpha_B_init, phi_init, h_phi_init],...
         'objective', @(y) stretch_bend_min(y, const),...
@@ -64,21 +109,22 @@ for ii = 1:length(param_1_vals)
         'nonlcon', @(y) lipid_con_bend(y,const),...
         'options', opts);
     alpha_A_vals_inp = [-0.1, -alpha_i, -1e-3, 0, 1e-3, alpha_i, 0.1];
-    alpha_B_vals_inp = [-0.1, -alpha_i, -1e-3, 0, 1e-3, alpha_i, 0.1];
+%     alpha_B_vals_inp = [-0.1, -alpha_i, -1e-3, 0, 1e-3, alpha_i, 0.1];
     phi_vals_inp = deg2rad([0, 5, 20, 45, 60, 85, 90]);
     h_phi_vals_inp = [-2*d,-d/2, -R, 0, R, d/2,2*d];
     tic
     for aa = 1:length(alpha_A_vals_inp)
-            for pp = 1:length(phi_vals_inp)
-                for hh = 1:length(h_phi_vals_inp) 
-                    const_con = [epsilon, n0, d, R, kD, kappa, alpha_i, N,...
-                        alpha_A_vals_inp(aa), phi_vals_inp(pp), h_phi_vals_inp(hh)];
-                    alpha_B_vals_inp(pp,hh,aa) = fzero(@(x) lipid_con_bend_test_A(x, const_con), rand()*0.2-0.1);
-                    ptmatrix(aa,pp,hh,1:4) = ...
-                        [alpha_A_vals_inp(aa), alpha_B_vals_inp(pp,hh,aa),...
-                         phi_vals_inp(pp), h_phi_vals_inp(hh)];
-                end
+        aa
+        for pp = 1:length(phi_vals_inp)
+            for hh = 1:length(h_phi_vals_inp) 
+                const_con = [epsilon, n0, d, R, kD, kappa, alpha_i, N,...
+                    alpha_A_vals_inp(aa), phi_vals_inp(pp), h_phi_vals_inp(hh)];
+                alpha_B_vals_inp(pp,hh,aa) = fzero(@(x) lipid_con_bend_test_A(x, const_con), rand()*0.2-0.1);
+                ptmatrix(aa,pp,hh,1:4) = ...
+                    [alpha_A_vals_inp(aa), alpha_B_vals_inp(pp,hh,aa),...
+                     phi_vals_inp(pp), h_phi_vals_inp(hh)];
             end
+        end
     end
     toc
     ptmatrix = reshape(ptmatrix, [numel(ptmatrix)/4, 4]);
@@ -88,6 +134,8 @@ for ii = 1:length(param_1_vals)
     tic
     [out,fval2,exitflag,output,solutions] = run(gs,problem, {tpoints,rs});
     toc
+
+    solution_set{ii} = solutions;
     
     % get energies etc
     alpha_A = out(1);
@@ -170,6 +218,12 @@ function f = stretch_bend_min(y, const)
       + kD/2*(alpha_A.^2*S_A./(1+alpha_A)+alpha_B.^2*S_B./(1+alpha_B))...
       + E_bend + 4*pi*kappa*(1-cos(phi));
 
+    [~, warnID] = lastwarn;
+    if strcmp('MATLAB:integral:MaxIntervalCountReached', warnID)
+        sprintf('%g,', y)
+        warning('MATLAB:test_warning','Set new warning')
+    end
+
 end
 
 function [c,ceq] = lipid_con_bend(y, const)
@@ -206,6 +260,12 @@ function [c,ceq] = lipid_con_bend(y, const)
     c(1) = 0;
 
     ceq(1) = S_A./(1+alpha_A)+S_B./(1+alpha_B)-S_i/(1+alpha_i);
+
+    [~, warnID] = lastwarn;
+    if strcmp('MATLAB:integral:MaxIntervalCountReached', warnID)
+        sprintf('%g,', y)
+        warning('MATLAB:test_warning','Set new warning')
+    end
 
 end
 
