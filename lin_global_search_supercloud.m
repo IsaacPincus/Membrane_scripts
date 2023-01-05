@@ -1,7 +1,7 @@
-clear variables
-
-MyTaskID = 0;
-NumberOfTasks = 1;
+% clear variables
+% 
+% MyTaskID = 0;
+% NumberOfTasks = 1;
 
 % check that the environment variables have been read in correctly
 if ~(exist('MyTaskID', 'var')&&exist('NumberOfTasks', 'var'))
