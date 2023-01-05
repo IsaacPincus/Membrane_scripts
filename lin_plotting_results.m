@@ -186,6 +186,12 @@ for ii=3:6
     plot(param_1_vals, E_per_lipid(ii,:), ...
         strcat(colours(ii),lines(ii)))
 end
+% plot(param_1_vals, E_per_lipid(3,:)+E_per_lipid(4,:), 'r-');
+% plot(param_1_vals, E_per_lipid(5,:)+E_per_lipid(6,:), 'g-');
+% legend({'$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
+%     '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$',...
+%     '$E_\mathrm{stretch,Total}$','$E_\mathrm{bend,Total}$'},...
+%     'Box','off','location', 'best')
 % legend({'$E_\mathrm{adhesion,A}$',...
 %     '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
 %     '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
@@ -196,13 +202,13 @@ legend({'$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
 
 %% replotting each function
 
-figure('Position',[400,100,700,500]);
+figure('Position',[400,100,800,600]);
 hold on
 axis equal
 xlabel('$r$')
 ylabel('$h$')
 N = 1e6;
-for ii = [1,20,40]
+for ii = [1,20,40,60,80,96]
     epsilon = parameter_set(ii,1);
     n0 = parameter_set(ii,2);
     d = parameter_set(ii,3);
@@ -233,7 +239,7 @@ for ii = [1,20,40]
     E_bend_A = 4*pi*kappa*(1-cos(phi));
     E = E_adhesion + E_stretch_A + E_stretch_B + E_bend_A + E_bend_B;
 
-    h1 = plot(r, h, 'displayname', sprintf('$\\kappa = %0.2e$', kappa));
+    h1 = plot(r, h, 'displayname', sprintf('$\\kappa/\\kappa_0 = %0.2e$', kappa/1e-7));
     colour = h1.Color;
     t = linspace(-pi/2,-pi/2+phi,1000);
     x = cos(t)*R;
