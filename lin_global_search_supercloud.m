@@ -1,7 +1,7 @@
-% clear variables
-% 
-% MyTaskID = 0;
-% NumberOfTasks = 1;
+clear variables
+
+MyTaskID = 0;
+NumberOfTasks = 1;
 
 % check that the environment variables have been read in correctly
 if ~(exist('MyTaskID', 'var')&&exist('NumberOfTasks', 'var'))
@@ -69,7 +69,7 @@ parameter_set_self = parameter_set(my_set_min:my_set_max, :);
 my_set_size = size(parameter_set_self);
 my_set_length = my_set_size(1);
 
-save_name = sprintf('task%i_results.mat', MyTaskID-1);
+save_name = sprintf('data/task%i_results.mat', MyTaskID-1);
 
 %% run batch job for this task set
 for ii = 1:my_set_length
@@ -80,12 +80,14 @@ for ii = 1:my_set_length
     kD = parameter_set_self(ii, 5);
     kappa = parameter_set_self(ii, 6);
     alpha_i = parameter_set_self(ii, 7);
+    zeta = epsilon*n0/kD;
+    sigma = sqrt(R^2/d^2);
 
     % solve microplastics for initial stretch of A and B
     options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e4);
     const = [zeta, alpha_i, d, R];
     [out,fval,~,~,lam_vals,grad,hessian] = ...
-        fmincon(@(y) free_phi(y, const),[alpha_i, alpha_i, 0.3], [],[],[],[],...
+        fmincon(@(y) free_phi(y, const),[0.2, 0.2, pi/3], [],[],[],[],...
         [-1,-1,0],[Inf, Inf, pi/2], ...
         @(y) lipid_con_phi(y,const), options);
     alpha_A_init = out(1);
