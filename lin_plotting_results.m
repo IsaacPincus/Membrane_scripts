@@ -36,17 +36,17 @@ kD = parameter_set(base_index,5);
 kappa = parameter_set(base_index,6);
 alpha_i = parameter_set(base_index,7);
 zeta = epsilon*n0/kD;
-sigma = sqrt(R^2/d^2);
+sigma = R^2/d^2;
 %
-changing_value = 6;
-param_1_vals = parameter_set(:,changing_value)/1e-7;
+changing_value = 5;
+param_1_vals = parameter_set(:,changing_value)/(300/10^12*1e9);
 
 %% plotting
 close all
 init_vals = param_1_vals(1:40);
 on = ones(size(init_vals));
 
-xaxis_name = '$\kappa/\kappa_0$';
+xaxis_name = '$k_D/k_{D,0}$';
 
 figure('Position',[400,100,800,600]);
 hold on
@@ -66,9 +66,9 @@ end
 % plot(init_vals, on*data.E_total_init, 'k-.', 'linewidth', 0.5);
 % plot(init_vals, on*data.E_adhesion_init, 'b-.', 'linewidth', 0.5);
 % plot(init_vals, on*data.E_stretch_B_init, 'r-.', 'linewidth', 0.5);
-plot(init_vals, on*-0.001466887916365, 'k-.', 'linewidth', 0.5);
-plot(init_vals, on*-0.002422090201862, 'b-.', 'linewidth', 0.5);
-plot(init_vals, on*9.516558874055476e-04, 'r-.', 'linewidth', 0.5);
+% plot(init_vals, on*-0.001466887916365, 'k-.', 'linewidth', 0.5);
+% plot(init_vals, on*-0.002422090201862, 'b-.', 'linewidth', 0.5);
+% plot(init_vals, on*9.516558874055476e-04, 'r-.', 'linewidth', 0.5);
 legend({'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
     '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
     '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
@@ -216,6 +216,8 @@ for ii = [1,20,40,60,80,96]
     kD = parameter_set(ii,5);
     kappa = parameter_set(ii,6);
     alpha_i = parameter_set(ii,7);
+    zeta = epsilon*n0/kD;
+    sigma = R^2/d^2;
 
     alpha_A = alpha_A_vals(ii);
     alpha_B = alpha_B_vals(ii);
@@ -239,7 +241,8 @@ for ii = [1,20,40,60,80,96]
     E_bend_A = 4*pi*kappa*(1-cos(phi));
     E = E_adhesion + E_stretch_A + E_stretch_B + E_bend_A + E_bend_B;
 
-    h1 = plot(r, h, 'displayname', sprintf('$\\kappa/\\kappa_0 = %0.2e$', kappa/1e-7));
+    h1 = plot(r, h, 'displayname', sprintf('$k_D/k_{D,0} = %0.2e$', ...
+        kD/(300/10^12*1e9)));
     colour = h1.Color;
     t = linspace(-pi/2,-pi/2+phi,1000);
     x = cos(t)*R;
@@ -375,12 +378,14 @@ posnew(1) = posnew(1) - 0.03;
 set(s_plot, 'Position', posnew);
 
 h = axes(fig,'visible','off'); 
+h.Toolbar.Visible = 'off';
 c_bar = colorbar(h,'Position',[0.90 0.168 0.022 0.7]);  % attach colorbar to h
 set(h,'ColorScale','log')
 c_bar.TickLabelInterpreter = 'latex';
 c_bar.Label.String = 'Multiplicity';
 colormap('winter')
 c_bar.Label.Position = [1.5,0.35];
+set(fig, 'Children', flipud(fig.Children))
 % colormap(c,'jet')
 % caxis(h,[minColorLimit,maxColorLimit]);             % set colorbar limits
 
