@@ -1,9 +1,10 @@
-clear variables
+% clear variables
 
 % constants
-R = 1;                  % um
+R = 0.3;                  % um
 sigma = 0.01;          % surface fraction
-d = sqrt(R^2/sigma);    % um
+% d = sqrt(R^2/sigma);    % um
+d = 3;    % um
 phi = pi/12;
 kD  = 300/10^12*1e9;    % picoJ/um^2
 zeta = 0.02;            % dimensionless
@@ -191,7 +192,12 @@ if savedata
 end
 
 %%
-figure('Position',[400,100,700,500]);
+% close all
+if ~ishandle(1)
+    f1 = figure('Position',[400,100,700,500]);
+else
+    figure(f1);
+end
 hold on
 xlim([0,90])
 xlabel('$\phi$')
@@ -216,29 +222,62 @@ legend({'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
     '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
     'location', 'nw')
 
-% areas
-figure();
-hold on
-xlim([0,90]);
-xlabel('$\phi$')
-yyaxis left
-ylabel('Area')
-plot(rad2deg(phi_vals), S_B_vals, '--', 'displayname', '$S_B$')
-plot(rad2deg(phi_vals), S_A_vals+S_B_vals, '-', 'displayname', '$S_\mathrm{total}$')
-yyaxis right
-ylabel('Area')
-plot(rad2deg(phi_vals), S_A_vals, '--', 'displayname', '$S_A$')
-legend
 
-% stretches
-figure();
+%slopes
+if ~ishandle(2)
+    f2 = figure('Position',[400,100,700,500]);
+else
+    figure(f2);
+end
 hold on
-xlim([0,90]);
+xlim([0,90])
 xlabel('$\phi$')
-ylabel('$\alpha$')
-plot(rad2deg(phi_vals), alpha_B_vals, 'displayname', '$\alpha_B$')
-plot(rad2deg(phi_vals), alpha_A_vals, 'displayname', '$\alpha_A$')
-legend
+ylabel('$\partial E/\partial \phi$')
+lines = ["-", ":", ":", "--", ":", "--"];
+colours = ['k', 'b', 'r', 'r', 'g', 'g'];
+for ii=1:6
+    plot(rad2deg((phi_vals(1:end-1)+phi_vals(2:end))/2),...
+        diff(E_all(ii,:))./diff(rad2deg(phi_vals)), ...
+        strcat(colours(ii),lines(ii)))
+end
+annotation('textbox', [0.5,0.7,0.4,0.2], 'String',...
+    [sprintf('$R = %0.2g$ $\\mu$m \n', R),...
+    sprintf('$k_D = %0.2g$ pJ/$\\mu$m$^2$ \n', kD),...
+    sprintf('$\\alpha_i = %0.2g$ \n', alpha_i),...
+    sprintf('$d^2 = %0.2g R^2$ \n', sigma),...
+    sprintf('$\\epsilon n_0 = %0.2g k_\\mathrm{D}$ \n', zeta),...
+    sprintf('$\\kappa = %0.2g k_\\mathrm{D} R^2$ \n', kappa/(kD*R^2))], ...
+    'interpreter', 'latex','FontSize',16,...
+    'FitBoxToText','on','LineStyle','none', 'Color','b')
+legend({'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
+    '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
+    '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
+    'location', 'nw')
+
+
+% % areas
+% figure();
+% hold on
+% xlim([0,90]);
+% xlabel('$\phi$')
+% yyaxis left
+% ylabel('Area')
+% plot(rad2deg(phi_vals), S_B_vals, '--', 'displayname', '$S_B$')
+% plot(rad2deg(phi_vals), S_A_vals+S_B_vals, '-', 'displayname', '$S_\mathrm{total}$')
+% yyaxis right
+% ylabel('Area')
+% plot(rad2deg(phi_vals), S_A_vals, '--', 'displayname', '$S_A$')
+% legend
+% 
+% % stretches
+% figure();
+% hold on
+% xlim([0,90]);
+% xlabel('$\phi$')
+% ylabel('$\alpha$')
+% plot(rad2deg(phi_vals), alpha_B_vals, 'displayname', '$\alpha_B$')
+% plot(rad2deg(phi_vals), alpha_A_vals, 'displayname', '$\alpha_A$')
+% legend
 
 function f = stretch_bend_min(y, const)
     % function of free energy to minimise

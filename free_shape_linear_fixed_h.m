@@ -1,4 +1,4 @@
-function [h, C, A, E, lap_h, hderiv] = free_shape_linear_fixed_h(r, r_phi, d, phi, kappa, Sigma, h_phi)
+function [h, C, A, E, hderiv, lap_h] = free_shape_linear_fixed_h(r, r_phi, d, phi, kappa, Sigma, h_phi)
 % solves the shape equation for the free surface of a section of membrane
 % bound at one end to a sphere of radius R at the point phi radians from
 % the bottom of the sphere, with a flat surface at d/2. The shape is
