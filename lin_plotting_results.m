@@ -34,11 +34,45 @@ end
 toc
 
 %% base case
+% generate list of independent variables to run, which should be in the
+% order [epsilon, n0, d, R, kD, kappa, alpha_i] for each row
+R_vals = 1;                 					% um
+sigma_vals = logspace(-3,-1.8,48);                % surface fraction
+%d_vals = sqrt(R_vals.^2./sigma_vals);           % um
+kD_vals = 300/10^12*1e9;                        % picoJ/um^2
+kD_base = 300/10^12*1e9;                        % picoJ/um^2
+zeta_vals = [0.01,0.02,0.03];                  % dimensionless
+epsilon_vals = -zeta_vals*kD_base;              % picoJ/um^2
+n0_vals = 1;                                    % fraction
+kappa_vals = 1e-19*1e12;         % picoJ
+% kappa_vals = logspace(-21,-15, 60)*1e12;
+alpha_i_vals = [0.013,0.0197];                            % fraction
+% other constants
+ii = 0;
+slice = [];
+for rr = 1:length(R_vals)
+    for ss = 1:length(sigma_vals)
+        for kk = 1:length(kD_vals)
+            for ee = 1:length(epsilon_vals)
+                for nn = 1:length(n0_vals)
+                    for pp = 1:length(kappa_vals)
+                        for aa = 1:length(alpha_i_vals)
+                            ii = ii+1;
+                            if aa==1 && ee==2
+                                slice = [slice, ii];
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
 size_params = size(parameter_set);
-base_index = 1;
-step = 1;
+base_index = slice(1);
+% step = 1;
 % if using R
-slice = base_index:step:size_params(1);
+% slice = base_index:step:size_params(1);
 % if using alpha_i
 % slice = (base_index-1)*step+1:base_index*step;
 % base_index = (base_index-1)*step+1;
@@ -52,9 +86,9 @@ alpha_i = parameter_set(base_index,7);
 zeta = epsilon*n0/kD;
 sigma = R^2/d^2;
 
-changing_value = 4;
+changing_value = 3;
 % param_1_vals = R^2./parameter_set(slice,changing_value).^2;
-param_1_vals = parameter_set(slice,changing_value);
+param_1_vals = R.^2./parameter_set(slice,changing_value).^2;
 E_all = E_all_total(:, slice);
 alpha_A_vals = alpha_A_vals_total(slice);
 alpha_B_vals = alpha_B_vals_total(slice);
@@ -68,20 +102,23 @@ solution_set = solution_set_total(slice);
 
 % specific curves to plot
 % plot_curves = [1,5, 10, 15, 25, 30, 35];
-plot_curves = round(linspace(15,70,7));
+plot_curves = round(linspace(1,48,7));
 % plot_curves = [1,54,74,76,82,85,88];
+
+small_param = 0.005;
+large_param = 0.015;
 
 colours_cb = ["#27E0D8", "#648FFF", "#1D0C6B", "#DC267F", "#FE6100", ...
     "#FFB000", "#016D24"];
 
 %% plotting
 close all
-init_vals = param_1_vals(1:20);
+init_vals = param_1_vals(1:40);
 on = ones(size(init_vals));
 
 % xaxis_name = '$\alpha_i$';
-% xaxis_name = '$\sigma$';
-xaxis_name = '$R$ ($\mu$m)';
+xaxis_name = '$\sigma$';
+% xaxis_name = '$R$ ($\mu$m)';
 % xaxis_name = '$\kappa$';
 
 % xscale = 'linear';
@@ -108,8 +145,6 @@ min_E = min(E_all, [], 'all')*1.1;
 max_E = max(E_all, [], 'all')*1.1;
 % small_param = param_1_vals(10);
 % large_param = param_1_vals(30);
-small_param = 0.05;
-large_param = 0.5;
 patch([small_param, small_param, large_param, large_param],...
       [min_E, max_E, max_E, min_E], 'm', 'FaceAlpha', 0.05, ...
       'EdgeColor', 'None', 'HandleVisibility', 'off')
@@ -302,16 +337,22 @@ xlabel(xaxis_name)
 ylabel('Lipids')
 % plot(init_vals, on*S_B_init, '-.', 'linewidth', 0.5, 'HandleVisibility','off');
 % plot(init_vals, on*(S_B_init+S_A_init), '-.', 'linewidth', 0.5, 'HandleVisibility','off');
-plot(param_1_vals, S_B_vals./(1+alpha_B_vals), '--', 'displayname', '$S_B$')
-r_phi_vals = parameter_set(slice,4)'.*sin(phi_vals);
-no_bend_B_lip = (d^2-r_phi_vals.^2*pi)./(1+alpha_B_vals);
-plot(param_1_vals, no_bend_B_lip, 'k:', 'displayname', '$d^2-\pi r_\phi^2$')
+% plot(param_1_vals, S_B_vals./(1+alpha_B_vals), '--', 'displayname', '$S_B$')
+% r_phi_vals = parameter_set(slice,4)'.*sin(phi_vals);
+% no_bend_B_lip = (d^2-r_phi_vals.^2*pi)./(1+alpha_B_vals);
+% plot(param_1_vals, no_bend_B_lip, 'k:', 'displayname', '$d^2-\pi r_\phi^2$')
 % plot(param_1_vals, S_A_vals./(1+alpha_A_vals)+S_B_vals./(1+alpha_B_vals),...
 %     '-', 'displayname', '$S_\mathrm{total}$')
 % yyaxis right
 ylabel('Lipids')
 % plot(init_vals, on*S_A_init, '-.', 'linewidth', 0.5, 'HandleVisibility','off');
-% plot(param_1_vals, S_A_vals./(1+alpha_A_vals), '--', 'displayname', '$S_A$')
+plot(param_1_vals, S_A_vals./(1+alpha_A_vals), '--', 'displayname', '$S_A$')
+axes_ylims = get(gca, 'YLim');
+patch([small_param, small_param, large_param, large_param],...
+      [axes_ylims(1), axes_ylims(2), axes_ylims(2), axes_ylims(1)],...
+      'm', 'FaceAlpha', 0.05, ...
+      'EdgeColor', 'None', 'HandleVisibility', 'off')
+plot_vert_lines(param_1_vals(plot_curves), colours_cb)
 legend
 
 %% stretches
@@ -337,6 +378,13 @@ patch([small_param, small_param, large_param, large_param],...
       'EdgeColor', 'None', 'HandleVisibility', 'off')
 plot_vert_lines(param_1_vals(plot_curves), colours_cb)
 legend
+
+figure();
+hold on
+xlabel('concentration ($\mu$m/ml)')
+ylabel('Tension (mN/m)')
+concentration = 600*param_1_vals/0.016;
+plot(concentration, alpha_B_vals*kD*1e3)
 
 % phi and h_phi
 figure('Position',[400,100,800,600]);
@@ -471,8 +519,8 @@ for ii = plot_curves
 %         kD/(300/10^12*1e9)));
 %     h1 = plot(r, h, 'displayname', sprintf('$\\alpha_i = %0.2e$', ...
 %         alpha_i), 'Color', colours_cb(counter));
-    h1 = plot(r, h, 'displayname', sprintf('$R = %0.2e$', ...
-        R), 'Color', colours_cb(counter));
+    h1 = plot(r, h, 'displayname', sprintf('$\\kappa = %0.2e$', ...
+        kappa), 'Color', colours_cb(counter));
 %     h2 = plot(r, h_lim, '--', 'displayname', sprintf('$R = %0.2e$', ...
 %         R), 'Color', colours_cb(counter), 'HandleVisibility','off');
 %     yyaxis left
