@@ -36,18 +36,19 @@ toc
 %% base case
 % generate list of independent variables to run, which should be in the
 % order [epsilon, n0, d, R, kD, kappa, alpha_i] for each row
-R_vals = 1;                 					% um
-sigma_vals = logspace(-3,-1.8,48);                % surface fraction
-%d_vals = sqrt(R_vals.^2./sigma_vals);           % um
+R_vals = logspace(-1,0.69,96)*0.3;                 % um
+sigma_vals = 0.01;                % surface fraction
+d_vals = 3;           							% um
 kD_vals = 300/10^12*1e9;                        % picoJ/um^2
 kD_base = 300/10^12*1e9;                        % picoJ/um^2
-zeta_vals = [0.01,0.02,0.03];                  % dimensionless
+zeta_vals = 0.02;                  % dimensionless
 epsilon_vals = -zeta_vals*kD_base;              % picoJ/um^2
 n0_vals = 1;                                    % fraction
 kappa_vals = 1e-19*1e12;         % picoJ
 % kappa_vals = logspace(-21,-15, 60)*1e12;
-alpha_i_vals = [0.013,0.0197];                            % fraction
+alpha_i_vals = 0.01;                            % fraction
 % other constants
+N = 3e5;
 ii = 0;
 slice = [];
 for rr = 1:length(R_vals)
@@ -58,7 +59,7 @@ for rr = 1:length(R_vals)
                     for pp = 1:length(kappa_vals)
                         for aa = 1:length(alpha_i_vals)
                             ii = ii+1;
-                            if aa==1 && ee==2
+                            if 1
                                 slice = [slice, ii];
                             end
                         end
@@ -70,8 +71,9 @@ for rr = 1:length(R_vals)
 end
 size_params = size(parameter_set);
 base_index = slice(1);
+% base_index = 1;
 % step = 1;
-% if using R
+% % if using R
 % slice = base_index:step:size_params(1);
 % if using alpha_i
 % slice = (base_index-1)*step+1:base_index*step;
@@ -86,9 +88,9 @@ alpha_i = parameter_set(base_index,7);
 zeta = epsilon*n0/kD;
 sigma = R^2/d^2;
 
-changing_value = 3;
+changing_value = 4;
 % param_1_vals = R^2./parameter_set(slice,changing_value).^2;
-param_1_vals = R.^2./parameter_set(slice,changing_value).^2;
+param_1_vals = parameter_set(slice,changing_value);
 E_all = E_all_total(:, slice);
 alpha_A_vals = alpha_A_vals_total(slice);
 alpha_B_vals = alpha_B_vals_total(slice);
@@ -97,28 +99,27 @@ h_phi_vals = h_phi_vals_total(slice);
 S_A_vals = S_A_vals_total(slice);
 S_B_vals = S_B_vals_total(slice);
 Sigma_vals = Sigma_vals_total(slice);
+sigma_vals = param_1_vals'.^2/d^2;
+lambda_vals = sqrt(kappa./(kD*alpha_B_vals));
 
 solution_set = solution_set_total(slice);
 
 % specific curves to plot
 % plot_curves = [1,5, 10, 15, 25, 30, 35];
-plot_curves = round(linspace(1,48,7));
+plot_curves = round(linspace(15,70,7));
 % plot_curves = [1,54,74,76,82,85,88];
-
-small_param = 0.005;
-large_param = 0.015;
 
 colours_cb = ["#27E0D8", "#648FFF", "#1D0C6B", "#DC267F", "#FE6100", ...
     "#FFB000", "#016D24"];
 
 %% plotting
 close all
-init_vals = param_1_vals(1:40);
+init_vals = param_1_vals(1:20);
 on = ones(size(init_vals));
 
 % xaxis_name = '$\alpha_i$';
-xaxis_name = '$\sigma$';
-% xaxis_name = '$R$ ($\mu$m)';
+% xaxis_name = '$\sigma$';
+xaxis_name = '$R$ ($\mu$m)';
 % xaxis_name = '$\kappa$';
 
 % xscale = 'linear';
@@ -145,6 +146,8 @@ min_E = min(E_all, [], 'all')*1.1;
 max_E = max(E_all, [], 'all')*1.1;
 % small_param = param_1_vals(10);
 % large_param = param_1_vals(30);
+small_param = 0.05;
+large_param = 0.5;
 patch([small_param, small_param, large_param, large_param],...
       [min_E, max_E, max_E, min_E], 'm', 'FaceAlpha', 0.05, ...
       'EdgeColor', 'None', 'HandleVisibility', 'off')
@@ -170,6 +173,103 @@ annotation('textbox', [0.3,0.6,0.4,0.2], 'String',...
 xlim([param_1_vals(1), param_1_vals(end)])
 ylim([min_E, max_E])
 
+%% dimensionless parameters
+figure();
+hold on
+axes1 = gca;
+axes1.XScale = 'log';
+axes1.YScale = 'log';
+plot(param_1_vals, param_1_vals'./lambda_vals, 'DisplayName','$R/\lambda$')
+plot(param_1_vals, sigma_vals, 'DisplayName','$\sigma$')
+plot(param_1_vals, d./lambda_vals, 'DisplayName','$d/\lambda$')
+xlabel(xaxis_name)
+legend
+
+Rbar = param_1_vals'./lambda_vals;
+Rtest = param_1_vals';
+log(Rtest(end)/Rtest(end-5))/log(Rbar(end)/Rbar(end-5));
+log(Rtest(1)/Rtest(5))/log(Rbar(1)/Rbar(5));
+
+%% testing non dim!!!!
+figure('Position',[400,100,800,600]);
+hold on
+axes1 = gca;
+axes1.XScale = xscale;
+% xlabel('$\kappa$ (pJ)')
+% xlabel('$\zeta$')
+% xlabel('surface fraction $\sigma$')
+xlabel(xaxis_name)
+ylabel('$E/d^2 k_\mathrm{D}$')
+lines = ["-", ":", ":", "--", ":", "--"];
+colours = ['k', 'b', 'r', 'r', 'g', 'g'];
+symbols = ['p', 'o', 'o', 's', 'o', 's'];
+markersize = 2;
+E_all_ana = [E_all(1,:)/(d^2*kD);...
+    zeta./(1+alpha_A_vals)*2*pi.*(1-cos(phi_vals)).*sigma_vals;...
+    0.5*alpha_A_vals.^2./(1+alpha_A_vals)*2*pi.*(1-cos(phi_vals)).*sigma_vals;...
+    0.5*alpha_B_vals.^2./(1+alpha_B_vals).*(1-pi*sigma_vals.*sin(phi_vals).^2);...
+    4*pi*kappa/(d^2*kD)*(1-cos(phi_vals));...
+    pi/2*alpha_B_vals.*sigma_vals.*tan(phi_vals).^2.*sin(phi_vals).^2.*...
+    (besselk(1,param_1_vals'./lambda_vals.*sin(phi_vals),1).^2-...
+     besselk(0,param_1_vals'./lambda_vals.*sin(phi_vals),1).^2)./...
+     besselk(1,param_1_vals'./lambda_vals.*sin(phi_vals),1).^2];
+for ii=1:6
+%     plot(param_1_vals, E_all(ii,:).*param_1_vals', ...
+%         strcat(colours(ii),lines(ii)))
+    plot(param_1_vals, E_all(ii,:)/(d^2*kD), ...
+        strcat(colours(ii),lines(ii)))
+    plot(param_1_vals, E_all_ana(ii,:), ...
+        strcat(colours(ii),symbols(ii)),'markersize', markersize)
+end
+min_E = min(E_all, [], 'all')*1.1;
+max_E = max(E_all, [], 'all')*1.1;
+% small_param = param_1_vals(10);
+% large_param = param_1_vals(30);
+small_param = 0.05;
+large_param = 0.5;
+patch([small_param, small_param, large_param, large_param],...
+      [min_E, max_E, max_E, min_E], 'm', 'FaceAlpha', 0.05, ...
+      'EdgeColor', 'None', 'HandleVisibility', 'off')
+plot_vert_lines(param_1_vals(plot_curves), colours_cb)
+names = {'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
+    '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
+    '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'};
+legend(names, 'Box','off',...
+    'location', 'best')
+annotation('textbox', [0.3,0.6,0.4,0.2], 'String',...
+    [sprintf('$k_D = %0.2g$ pJ/$\\mu$m$^2$ \n', kD),...
+    sprintf('$\\kappa = %0.2g$ pJ \n', kappa),...
+    sprintf('$\\alpha_i = %0.2g$ \n', alpha_i),...
+    sprintf('$d = %0.2g$ $\\mu$m \n', d),...
+    sprintf('$\\epsilon n_0 = %0.2g k_\\mathrm{D}$ \n', zeta)],...
+    'interpreter', 'latex','FontSize',16,...
+    'FitBoxToText','on','LineStyle','none', 'Color','b')
+xlim([param_1_vals(1), param_1_vals(end)])
+ylim([min_E, max_E])
+
+figure('Position',[200,100,1100,600])
+for ii=1:6
+%     plot(param_1_vals, E_all(ii,:).*param_1_vals', ...
+%         strcat(colours(ii),lines(ii)))
+    subplot(2,3,ii)
+    hold on
+%     plot(param_1_vals, E_all_ana(ii,:), ...
+%         strcat(colours(ii),symbols(ii)),'markersize', markersize)
+    plot(param_1_vals, E_all_ana(ii,:), ...
+        strcat('y',symbols(ii)),'markersize', markersize)
+    plot(param_1_vals, E_all(ii,:)/(d^2*kD), ...
+        strcat(colours(ii),lines(ii)))
+    axes1 = gca;
+    axes1.XScale = xscale;
+    xlabel(xaxis_name)
+    ylabel('$E/d^2 k_\mathrm{D}$')
+    title(names{ii})
+%     xlabel(xaxis_name, 'FontSize',14)
+%     ylabel('E (pJ)', 'FontSize',14)
+    axes1.YScale = 'log';
+end
+
+%%
 figure('Position',[200,100,1100,600])
 for ii=1:6
 %     plot(param_1_vals, E_all(ii,:).*param_1_vals', ...
@@ -179,6 +279,13 @@ for ii=1:6
         strcat(colours(ii),lines(ii)))
     axes1 = gca;
     axes1.XScale = xscale;
+    axes1.YScale = 'log';
+    axes1.XAxis.TickValues = [0.1,1];
+    axes1.XAxis.FontSize = 14;
+    axes1.YAxis.FontSize = 14;
+    xlabel(xaxis_name, 'FontSize',14)
+    ylabel('$E$', 'FontSize',14)
+    title(names{ii}, 'FontSize',14)
 %     xlabel(xaxis_name, 'FontSize',14)
 %     ylabel('E (pJ)', 'FontSize',14)
 %     axes1.YScale = 'log';
@@ -304,16 +411,16 @@ xlabel(xaxis_name)
 ylabel('Lipids')
 % plot(init_vals, on*S_B_init, '-.', 'linewidth', 0.5, 'HandleVisibility','off');
 % plot(init_vals, on*(S_B_init+S_A_init), '-.', 'linewidth', 0.5, 'HandleVisibility','off');
-plot(param_1_vals, S_B_vals./(1+alpha_B_vals), '--', 'displayname', '$S_B$')
+plot(param_1_vals, S_B_vals./(1+alpha_B_vals), '--', 'displayname', '$\frac{S_B}{1+\alpha_B}$')
 r_phi_vals = parameter_set(slice,4)'.*sin(phi_vals);
 no_bend_B_lip = (d^2-r_phi_vals.^2*pi)./(1+alpha_B_vals);
-plot(param_1_vals, no_bend_B_lip, 'k:', 'displayname', '$d^2-\pi r_\phi^2$')
+% plot(param_1_vals, no_bend_B_lip, 'k:', 'displayname', '$d^2-\pi r_\phi^2$')
 plot(param_1_vals, S_A_vals./(1+alpha_A_vals)+S_B_vals./(1+alpha_B_vals),...
-    '-', 'displayname', '$S_\mathrm{total}$')
+    '-', 'displayname', '$\frac{S_A}{1+\alpha_A}+\frac{S_B}{1+\alpha_B}$ (total lipids)')
 % yyaxis right
 ylabel('Lipids')
 % plot(init_vals, on*S_A_init, '-.', 'linewidth', 0.5, 'HandleVisibility','off');
-plot(param_1_vals, S_A_vals./(1+alpha_A_vals), '--', 'displayname', '$S_A$')
+plot(param_1_vals, S_A_vals./(1+alpha_A_vals), '--', 'displayname', '$\frac{S_A}{1+\alpha_A}$')
 axes_ylims = get(gca, 'YLim');
 patch([small_param, small_param, large_param, large_param],...
       [axes_ylims(1), axes_ylims(2), axes_ylims(2), axes_ylims(1)],...
@@ -323,37 +430,31 @@ plot_vert_lines(param_1_vals(plot_curves), colours_cb)
 legend
 
 %% individual total lipids
-figure('Position',[400,100,800,600]);
-hold on
-axes1 = gca;
-axes1.XScale = xscale;
-axes1.YScale = 'log';
-% xlim([0,90]);
-% xlabel('$\kappa$ (pJ)')
-% xlabel('$\zeta$')
-% xlabel('surface fraction $\sigma$')
-xlabel(xaxis_name)
-% yyaxis left
-ylabel('Lipids')
-% plot(init_vals, on*S_B_init, '-.', 'linewidth', 0.5, 'HandleVisibility','off');
-% plot(init_vals, on*(S_B_init+S_A_init), '-.', 'linewidth', 0.5, 'HandleVisibility','off');
+% figure('Position',[400,100,800,600]);
+% hold on
+% axes1 = gca;
+% axes1.XScale = xscale;
+% axes1.YScale = 'log';
+% % xlim([0,90]);
+% % xlabel('$\kappa$ (pJ)')
+% % xlabel('$\zeta$')
+% % xlabel('surface fraction $\sigma$')
+% xlabel(xaxis_name)
+% % yyaxis left
+% ylabel('Lipids')
+% % plot(init_vals, on*S_B_init, '-.', 'linewidth', 0.5, 'HandleVisibility','off');
+% % plot(init_vals, on*(S_B_init+S_A_init), '-.', 'linewidth', 0.5, 'HandleVisibility','off');
 % plot(param_1_vals, S_B_vals./(1+alpha_B_vals), '--', 'displayname', '$S_B$')
 % r_phi_vals = parameter_set(slice,4)'.*sin(phi_vals);
 % no_bend_B_lip = (d^2-r_phi_vals.^2*pi)./(1+alpha_B_vals);
 % plot(param_1_vals, no_bend_B_lip, 'k:', 'displayname', '$d^2-\pi r_\phi^2$')
-% plot(param_1_vals, S_A_vals./(1+alpha_A_vals)+S_B_vals./(1+alpha_B_vals),...
-%     '-', 'displayname', '$S_\mathrm{total}$')
-% yyaxis right
-ylabel('Lipids')
-% plot(init_vals, on*S_A_init, '-.', 'linewidth', 0.5, 'HandleVisibility','off');
-plot(param_1_vals, S_A_vals./(1+alpha_A_vals), '--', 'displayname', '$S_A$')
-axes_ylims = get(gca, 'YLim');
-patch([small_param, small_param, large_param, large_param],...
-      [axes_ylims(1), axes_ylims(2), axes_ylims(2), axes_ylims(1)],...
-      'm', 'FaceAlpha', 0.05, ...
-      'EdgeColor', 'None', 'HandleVisibility', 'off')
-plot_vert_lines(param_1_vals(plot_curves), colours_cb)
-legend
+% % plot(param_1_vals, S_A_vals./(1+alpha_A_vals)+S_B_vals./(1+alpha_B_vals),...
+% %     '-', 'displayname', '$S_\mathrm{total}$')
+% % yyaxis right
+% ylabel('Lipids')
+% % plot(init_vals, on*S_A_init, '-.', 'linewidth', 0.5, 'HandleVisibility','off');
+% % plot(param_1_vals, S_A_vals./(1+alpha_A_vals), '--', 'displayname', '$S_A$')
+% legend
 
 %% stretches
 figure('Position',[400,100,800,600]);
@@ -379,13 +480,6 @@ patch([small_param, small_param, large_param, large_param],...
 plot_vert_lines(param_1_vals(plot_curves), colours_cb)
 legend
 
-figure();
-hold on
-xlabel('concentration ($\mu$m/ml)')
-ylabel('Tension (mN/m)')
-concentration = 600*param_1_vals/0.016;
-plot(concentration, alpha_B_vals*kD*1e3)
-
 % phi and h_phi
 figure('Position',[400,100,800,600]);
 hold on
@@ -396,13 +490,13 @@ axes1.XScale = xscale;
 % xlabel('$\zeta$')
 % xlabel('surface fraction $\sigma$')
 xlabel(xaxis_name)
-yyaxis left
+% yyaxis left
 ylabel('$\phi$')
 plot(param_1_vals, rad2deg(phi_vals), 'displayname', '$\phi$')
 % plot(init_vals, on*rad2deg(phi_init), '-.', 'linewidth', 0.5, 'HandleVisibility','off')
-yyaxis right
-ylabel('$h_\phi$')
-plot(param_1_vals, h_phi_vals, 'displayname', '$h_\phi$')
+% yyaxis right
+% ylabel('$h_\phi$')
+% plot(param_1_vals, h_phi_vals, 'displayname', '$h_\phi$')
 axes_ylims = get(gca, 'YLim');
 patch([small_param, small_param, large_param, large_param],...
       [axes_ylims(1), axes_ylims(2), axes_ylims(2), axes_ylims(1)],...
@@ -459,7 +553,7 @@ hold on
 axis equal
 xlabel('$r$')
 ylabel('$h$')
-ylabel('$\int r \nabla^2 h dr$')
+% ylabel('$\int r \nabla^2 h dr$')
 axes1 = gca;
 % axes1.YScale = 'log';
 N = 1e4;
@@ -519,8 +613,8 @@ for ii = plot_curves
 %         kD/(300/10^12*1e9)));
 %     h1 = plot(r, h, 'displayname', sprintf('$\\alpha_i = %0.2e$', ...
 %         alpha_i), 'Color', colours_cb(counter));
-    h1 = plot(r, h, 'displayname', sprintf('$\\kappa = %0.2e$', ...
-        kappa), 'Color', colours_cb(counter));
+    h1 = plot(r, h, 'displayname', sprintf('$R = %0.2e$', ...
+        R), 'Color', colours_cb(counter));
 %     h2 = plot(r, h_lim, '--', 'displayname', sprintf('$R = %0.2e$', ...
 %         R), 'Color', colours_cb(counter), 'HandleVisibility','off');
 %     yyaxis left
@@ -529,8 +623,12 @@ for ii = plot_curves
 %     yyaxis right
 %     h2 = plot(r, cumtrapz(r,r.*lap_h.^2),'-',  'displayname', sprintf('$R = %0.2e$', ...
 %         R), 'Color', colours_cb(counter));
+%     result(counter) = trapz(r,r.*lap_h.^2);
+%     rl = r_phi/lambda;
+%     result2(counter) = tan(phi)^2/besselk(1,rl)^2*rl^2*1/2*(-besselk(0,rl)^2+besselk(1,rl)^2);
     colour = h1.Color;
-    t = linspace(-pi/2,-pi/2+phi,1000);
+%     t = linspace(-pi/2,-pi/2+phi,1000);
+    t = linspace(-pi/2,pi/2,1000);
     x = cos(t)*R;
     % y = sin(t)*R+(R*cos(phi)+h(1));
     y = sin(t)*R+R*cos(phi)+h(1);
