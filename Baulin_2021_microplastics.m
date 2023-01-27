@@ -1,9 +1,10 @@
 % implements Baulin 2021 microplastics model
 % all SI units
 
-sigma_vals=linspace(1e-3, 0.1, 20);
-for zeta = [-0.005, -0.0025, -0.0005]
-% for zeta = [-0.0025]
+% sigma_vals=linspace(1e-4, 0.1, 20);
+sigma_vals = logspace(-5,-3,20);
+% for zeta = [-0.005, -0.0025, -0.0005]
+for zeta = [-0.025]
     for ii = 1:length(sigma_vals)
         sigma = sigma_vals(ii);
 %         zeta = -0.01;
@@ -14,7 +15,7 @@ for zeta = [-0.005, -0.0025, -0.0005]
     %     S_i = d^2;
     %     S_A = 2*pi*R^2*(1-cos(theta));
     %     S_B = d^2 - pi*R^2*sin(theta)^2;
-        alpha_i = 0;
+        alpha_i = 0.01;
 %         lambda = 0;
     %     sigma(ii) = R^2/d^2;
         
@@ -42,8 +43,8 @@ for zeta = [-0.005, -0.0025, -0.0005]
         %     [-1,-1,0],[Inf, Inf, pi/2], ...
         %     @(y) area_con(y,const))
         [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
-            fmincon(@(y) free_theta(y, const),[0.001, 0.001, 0.3], [],[],[],[],...
-            [-1,-1,0],[Inf, Inf, pi/2], ...
+            fmincon(@(y) free_theta(y, const),[0.001, 0.001, pi*3/4], [],[],[],[],...
+            [-0.1,-0.1,0],[0.1, 0.1, pi], ...
             @(y) area_con_theta(y,const), options);
         % % out = fminsearch(@(y) free(y, const), [1, 1])
         % 
@@ -60,7 +61,7 @@ for zeta = [-0.005, -0.0025, -0.0005]
 
         lambda = lam_vals.eqnonlin;
 
-        alpha_A_test(ii) = sqrt(1+2*(lambda-zeta))-1;
+        alpha_A_test(ii) = sqrt(1+2*(lambda+zeta))-1;
         alpha_B_test(ii) = sqrt(1+2*lambda)-1;
 
     end
@@ -82,9 +83,13 @@ X = data(:,1:2:end);
 Y = data(:,2:2:end);
 % Y = data(:,2:2:end)*1.5902;
 
-plot(X, Y, 'displayName', 'Baulin 2021')
+axes1 = gca;
+axes1.XScale = 'log';
+
+% plot(X, Y, 'displayName', 'Baulin 2021')
 legend
 
+rad2deg(theta)
 
 %% functions
 
