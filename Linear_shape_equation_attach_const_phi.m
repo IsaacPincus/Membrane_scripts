@@ -1,7 +1,7 @@
 % clear variables
 
 % constants
-R = 0.3;                  % um
+R = 0.05;                  % um
 sigma = 0.01;          % surface fraction
 % d = sqrt(R^2/sigma);    % um
 d = 3;    % um
@@ -11,8 +11,8 @@ zeta = 0.02;            % dimensionless
 epsilon = -zeta*kD;     % picoJ/um^2
 % epsilon = -1;
 n0 = 1;                 % fraction
-% kappa = 1e-19*1e12;     % picoJ
-kappa = 1e-17*1e12;     % picoJ
+kappa = 1e-19*1e12;     % picoJ
+% kappa = 1e-17*1e12;     % picoJ
 alpha_i = 0.01;        % fraction
 zeta = epsilon*n0/kD;   % dimensionless
 N = 3e3;                % number of points in quadrature

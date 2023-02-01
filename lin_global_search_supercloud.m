@@ -13,22 +13,23 @@ MyTaskID = MyTaskID + 1;
 
 % generate list of independent variables to run, which should be in the
 % order [epsilon, n0, d, R, kD, kappa, alpha_i] for each row
-R_vals = 0.3;                                   % um
-sigma = 0.01;                                   % surface fraction
-d_vals = sqrt(R_vals.^2/sigma);                 % um
+R_vals = logspace(-1,1,10)*0.3;                 % um
+sigma_vals = logspace(-4,-1,30);                % surface fraction
+%d_vals = sqrt(R_vals.^2./sigma_vals);           % um
 kD_vals = 300/10^12*1e9;                        % picoJ/um^2
-zeta = 0.02;                                    % dimensionless
-epsilon_vals = -zeta*kD_vals;                        % picoJ/um^2
+kD_base = 300/10^12*1e9;                        % picoJ/um^2
+zeta_vals = logspace(-3,-1,4);                  % dimensionless
+epsilon_vals = -zeta_vals*kD_base;              % picoJ/um^2
 n0_vals = 1;                                    % fraction
-kappa_vals = logspace(-21,-15, 12)*1e12;         % picoJ
+kappa_vals = 1e-19*1e12;         % picoJ
 % kappa_vals = logspace(-21,-15, 60)*1e12;
-alpha_i_vals = 0.01;                            % fraction
+alpha_i_vals = 0;                            % fraction
 % other constants
-N = 3e3;
+N = 3e5;
 
 ii = 0;
 for rr = 1:length(R_vals)
-    for dd = 1:length(d_vals)
+    for ss = 1:length(sigma_vals)
         for kk = 1:length(kD_vals)
             for ee = 1:length(epsilon_vals)
                 for nn = 1:length(n0_vals)
@@ -37,7 +38,7 @@ for rr = 1:length(R_vals)
                             ii = ii+1;
                             parameter_set(ii, 1:7) = [epsilon_vals(ee),...
                                 n0_vals(nn),...
-                                d_vals(dd),...
+                                sqrt(R_vals(rr)^2/sigma_vals(ss)),...
                                 R_vals(rr),...
                                 kD_vals(kk),...
                                 kappa_vals(pp),...
@@ -51,7 +52,7 @@ for rr = 1:length(R_vals)
 end
 
 
-% split up job between task IDs
+%% split up job between task IDs
 size_parameter_set = size(parameter_set);
 total_parameter_sets = size_parameter_set(1);
 min_sets_per_job = floor(total_parameter_sets/NumberOfTasks);

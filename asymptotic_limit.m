@@ -13,6 +13,8 @@ ylabel('$h$')
 % ylabel('$\partial h/\partial r$')
 % ylabel('$\nabla^2 h$')
 % axis equal
+axes1 = gca;
+axes1.YScale = 'log';
 colours = ["r", "g", "b", "m"];
 ii = 0;
 
@@ -38,14 +40,14 @@ for lambda=[1,0.1,0.01,0.005]
     hderiv = C(1)./r+C(3)/lambda*besseli(1,r/lambda)-C(4)/lambda*besselk(1,r/lambda);
     lap_h = C(3)/lambda^2*besseli(0,r/lambda)+C(4)/lambda^2*besselk(0,r/lambda);
     
-    plot(r,h, strcat(colours(ii),'-'), ...
-        'displayname', sprintf('$\\lambda = %0.2g$', lambda));
+%     plot(r,h, strcat(colours(ii),'-'), ...
+%         'displayname', sprintf('$\\lambda = %0.2g$', lambda));
 
 %     plot(r,hderiv, strcat(colours(ii),'-'), ...
 %         'displayname', sprintf('$\\lambda = %0.2g$', lambda));
 
-%     plot(r,lap_h, strcat(colours(ii),'-'), ...
-%         'displayname', sprintf('$\\lambda = %0.2g$', lambda));
+    plot(r,lap_h, strcat(colours(ii),'-'), ...
+        'displayname', sprintf('$\\lambda = %0.2g$', lambda));
 
     % asymptotic solution
     C4_bar = (d/(2*r_phi*lambda)*besseli(1,d/2/lambda,1)*h_phi ...
@@ -68,14 +70,14 @@ for lambda=[1,0.1,0.01,0.005]
     lap_h_as = exp((r-d/2)/lambda).*C3_bar/lambda^2.*besseli(0,r/lambda,1)...
         +exp((r_phi-r)/lambda).*C4_bar/lambda^2.*besselk(0,r/lambda,1);
 
-    plot(r,h_as, strcat(colours(ii),':'), ...
-        'displayname', sprintf('$\\lambda = %0.2g$ asymptotic', lambda));
+%     plot(r,h_as, strcat(colours(ii),':'), ...
+%         'displayname', sprintf('$\\lambda = %0.2g$ asymptotic', lambda));
 
 %     plot(r,hderiv_as, strcat(colours(ii),':'), ...
 %         'displayname', sprintf('$\\lambda = %0.2g$ asymptotic', lambda));
 
-%     plot(r,lap_h_as, strcat(colours(ii),':'), ...
-%         'displayname', sprintf('$\\lambda = %0.2g$ asymptotic', lambda));
+    plot(r,lap_h_as, strcat(colours(ii),':'), ...
+        'displayname', sprintf('$\\lambda = %0.2g$ asymptotic', lambda));
 end
 
 % laplace solution
