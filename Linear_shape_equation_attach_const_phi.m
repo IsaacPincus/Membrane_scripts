@@ -1,27 +1,31 @@
-% clear variables
+clear variables
 
 % constants
-R = 0.05;                  % um
-sigma = 0.01;          % surface fraction
-% d = sqrt(R^2/sigma);    % um
-d = 3;    % um
+R = 0.05;
+sigma = 5e-5;
+d = sqrt(R^2/sigma);    % um
+% d = 20;    % um
 phi = pi/12;
 kD  = 300/10^12*1e9;    % picoJ/um^2
-zeta = 0.02;            % dimensionless
-epsilon = -zeta*kD;     % picoJ/um^2
-% epsilon = -1;
+% zeta = 0.02;            % dimensionless
+% epsilon = -zeta*kD;     % picoJ/um^2
 n0 = 1;                 % fraction
 kappa = 1e-19*1e12;     % picoJ
+gamma = 0.5*R;            % um
+epsilon = -kappa/gamma^2;
 % kappa = 1e-17*1e12;     % picoJ
-alpha_i = 0.01;        % fraction
 zeta = epsilon*n0/kD;   % dimensionless
+% alpha_i = sqrt(-zeta/2);        % fraction
+alpha_i = 0.0002;
+% alpha_i = 0;
+ten_param=-d*epsilon*n0/sqrt(kD*kappa)
 N = 3e3;                % number of points in quadrature
 
-savedata = 1;
+savedata = 0;
 plotfigs = 0;
 filename = '300nm_ai1kap19zeta002.mat';
 
-phi_vals = deg2rad(linspace(5,85,50));
+phi_vals = flip(deg2rad(linspace(0.1,10,50)));
 
 E_all = zeros(6,length(phi_vals));
 
@@ -31,29 +35,30 @@ rad2deg(phi)
 
 if ii==1
 %     % solve for initial stretch of A and B
-%     options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e4);
-%     const = [zeta, alpha_i, d, R, phi];
-%     [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
-%         fmincon(@(y) free_phi(y, const),[alpha_i, alpha_i], [],[],[],[],...
-%         [-1,-1],[Inf, Inf], ...
-%         @(y) lipid_con_phi(y,const), options);
-%     
-%     alpha_A_init = out(1);
-%     alpha_B_init = out(2);
-%     h_phi_init = 0;
+    options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e4);
+    const = [zeta, alpha_i, d, R, phi];
+    [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
+        fmincon(@(y) free_phi(y, const),[alpha_i, alpha_i], [],[],[],[],...
+        [-1,-1],[Inf, Inf], ...
+        @(y) lipid_con_phi(y,const), options);
+    
+    alpha_A_init = out(1)
+    alpha_B_init = out(2)
+    h_phi_init = 0;
 %     
 %     lambda_stretch = lam_vals.eqnonlin;
 %     
 %     alpha_A_test = sqrt(1+2*(lambda_stretch+zeta))-1;
 %     alpha_B_test = sqrt(1+2*lambda_stretch)-1;
 
-
-    alpha_A_init = -0.02;
-    alpha_B_init = -0.01;
-    h_phi_init = 0.03;
+% 
+    
+%     alpha_B_init = alpha_i+0.001;
+%     alpha_A_init = 0.05;
+%     h_phi_init = 0;
 else
-    alpha_A_init = alpha_A
-    alpha_B_init = alpha_B
+    alpha_A_init = alpha_A;
+    alpha_B_init = alpha_B;
     h_phi_init = h_phi;
 end
 
@@ -67,7 +72,7 @@ options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e3, 'algorithm', 'sqp');
 const = [epsilon, n0, d, R, kD, kappa, alpha_i, N, phi];
 [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
     fmincon(@(y) stretch_bend_min(y, const),[alpha_A_init, alpha_B_init, h_phi_init],...
-    [],[],[],[],[-1,-1,-Inf],[Inf, Inf, Inf], ...
+    [],[],[],[],[-0.1,-0.1,-Inf],[0.1, 0.1, Inf], ...
     @(y) lipid_con_bend(y,const), options);
 
 alpha_A = out(1);
@@ -75,6 +80,16 @@ alpha_B = out(2);
 h_phi = out(3);
 
 lambda_stretch = lam_vals.eqnonlin;
+% 
+% [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
+%     fmincon(@(y) stretch_bend_min_explicit_alpha_A(y, const),[alpha_B_init, h_phi_init],...
+%     [],[],[],[],[-0.1,-Inf],[0.1, Inf],[],options);
+
+% options = optimset('Display','iter','PlotFcns',@optimplotfval);
+% out = fminsearch(@(y) stretch_bend_min_explicit_alpha_A(y, const),[0, 0], options);
+% 
+% alpha_B = out(1)
+% h_phi = out(2);
 
 % alpha_A_test = sqrt(1+2*(lambda_stretch+zeta))-1;
 % alpha_B_test = sqrt(1+2*lambda_stretch)-1;
@@ -88,6 +103,9 @@ r = linspace(r_phi, d/2,N);
 [h,C,S_B, ~, lap_h, hderiv] = free_shape_linear_fixed_h(r, r_phi, d, phi, kappa, Sigma, h_phi);
 
 S_A = 2*pi*R^2*(1-cos(phi));
+alpha_A_test = S_A*(d^2/(1+alpha_i)-S_B/(1+alpha_B))^(-1)-1;
+alpha_A_vals_test(ii) = alpha_A_test;
+% alpha_A = S_A*(d^2/(1+alpha_i)-S_B/(1+alpha_B))^(-1)-1
 
 E_adhesion = epsilon*n0*S_A./(1+alpha_A);
 E_stretch_A = kD/2*(alpha_A.^2*S_A./(1+alpha_A));
@@ -199,28 +217,28 @@ else
     figure(f1);
 end
 hold on
-xlim([0,90])
+% xlim([0,90])
 xlabel('$\phi$')
-ylabel('$E$')
+ylabel('$\Delta E$')
 lines = ["-", ":", ":", "--", ":", "--"];
 colours = ['k', 'b', 'r', 'r', 'g', 'g'];
-for ii=1:6
-    plot(rad2deg(phi_vals), E_all(ii,:), ...
+for ii=1:1
+    plot(rad2deg(phi_vals), E_all(ii,:)-E_all(ii,end), ...
         strcat(colours(ii),lines(ii)))
 end
-annotation('textbox', [0.5,0.7,0.4,0.2], 'String',...
-    [sprintf('$R = %0.2g$ $\\mu$m \n', R),...
-    sprintf('$k_D = %0.2g$ pJ/$\\mu$m$^2$ \n', kD),...
-    sprintf('$\\alpha_i = %0.2g$ \n', alpha_i),...
-    sprintf('$d^2 = %0.2g R^2$ \n', sigma),...
-    sprintf('$\\epsilon n_0 = %0.2g k_\\mathrm{D}$ \n', zeta),...
-    sprintf('$\\kappa = %0.2g k_\\mathrm{D} R^2$ \n', kappa/(kD*R^2))], ...
-    'interpreter', 'latex','FontSize',16,...
-    'FitBoxToText','on','LineStyle','none', 'Color','b')
-legend({'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
-    '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
-    '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
-    'location', 'nw')
+% annotation('textbox', [0.5,0.7,0.4,0.2], 'String',...
+%     [sprintf('$R = %0.2g$ $\\mu$m \n', R),...
+%     sprintf('$k_D = %0.2g$ pJ/$\\mu$m$^2$ \n', kD),...
+%     sprintf('$\\alpha_i = %0.2g$ \n', alpha_i),...
+%     sprintf('$d^2 = %0.2g R^2$ \n', sigma),...
+%     sprintf('$\\epsilon n_0 = %0.2g k_\\mathrm{D}$ \n', zeta),...
+%     sprintf('$\\kappa = %0.2g k_\\mathrm{D} R^2$ \n', kappa/(kD*R^2))], ...
+%     'interpreter', 'latex','FontSize',16,...
+%     'FitBoxToText','on','LineStyle','none', 'Color','b')
+% legend({'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
+%     '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
+%     '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
+%     'location', 'nw')
 
 
 %slopes
@@ -230,7 +248,7 @@ else
     figure(f2);
 end
 hold on
-xlim([0,90])
+% xlim([0,90])
 xlabel('$\phi$')
 ylabel('$\partial E/\partial \phi$')
 lines = ["-", ":", ":", "--", ":", "--"];
@@ -240,19 +258,19 @@ for ii=1:6
         diff(E_all(ii,:))./diff(rad2deg(phi_vals)), ...
         strcat(colours(ii),lines(ii)))
 end
-annotation('textbox', [0.5,0.7,0.4,0.2], 'String',...
-    [sprintf('$R = %0.2g$ $\\mu$m \n', R),...
-    sprintf('$k_D = %0.2g$ pJ/$\\mu$m$^2$ \n', kD),...
-    sprintf('$\\alpha_i = %0.2g$ \n', alpha_i),...
-    sprintf('$d^2 = %0.2g R^2$ \n', sigma),...
-    sprintf('$\\epsilon n_0 = %0.2g k_\\mathrm{D}$ \n', zeta),...
-    sprintf('$\\kappa = %0.2g k_\\mathrm{D} R^2$ \n', kappa/(kD*R^2))], ...
-    'interpreter', 'latex','FontSize',16,...
-    'FitBoxToText','on','LineStyle','none', 'Color','b')
-legend({'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
-    '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
-    '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
-    'location', 'nw')
+% annotation('textbox', [0.5,0.7,0.4,0.2], 'String',...
+%     [sprintf('$R = %0.2g$ $\\mu$m \n', R),...
+%     sprintf('$k_D = %0.2g$ pJ/$\\mu$m$^2$ \n', kD),...
+%     sprintf('$\\alpha_i = %0.2g$ \n', alpha_i),...
+%     sprintf('$d^2 = %0.2g R^2$ \n', sigma),...
+%     sprintf('$\\epsilon n_0 = %0.2g k_\\mathrm{D}$ \n', zeta),...
+%     sprintf('$\\kappa = %0.2g k_\\mathrm{D} R^2$ \n', kappa/(kD*R^2))], ...
+%     'interpreter', 'latex','FontSize',16,...
+%     'FitBoxToText','on','LineStyle','none', 'Color','b')
+% legend({'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
+%     '$E_\mathrm{stretch,A}$','$E_\mathrm{stretch,B}$',...
+%     '$E_\mathrm{bend,A}$','$E_\mathrm{bend,B}$'}, 'Box','off',...
+%     'location', 'nw')
 
 
 % % areas
@@ -270,14 +288,15 @@ legend({'$E_\mathrm{total}$','$E_\mathrm{adhesion}$',...
 % legend
 % 
 % % stretches
-% figure();
-% hold on
+figure();
+hold on
 % xlim([0,90]);
-% xlabel('$\phi$')
-% ylabel('$\alpha$')
-% plot(rad2deg(phi_vals), alpha_B_vals, 'displayname', '$\alpha_B$')
-% plot(rad2deg(phi_vals), alpha_A_vals, 'displayname', '$\alpha_A$')
-% legend
+xlabel('$\phi$')
+ylabel('$\alpha$')
+plot(rad2deg(phi_vals), alpha_B_vals, 'displayname', '$\alpha_B$')
+plot(rad2deg(phi_vals), alpha_A_vals, 'displayname', '$\alpha_A$')
+% plot(rad2deg(phi_vals), alpha_A_vals_test, 'displayname', '$\alpha_A test$')
+legend
 
 function f = stretch_bend_min(y, const)
     % function of free energy to minimise
@@ -318,6 +337,41 @@ function f = stretch_bend_min(y, const)
 
 %     f = epsilon*n0*S_A./(1+alpha_A) ...
 %       + kD/2*(alpha_A.^2*S_A./(1+alpha_A)+alpha_B.^2*S_B./(1+alpha_B));
+
+end
+
+function f = stretch_bend_min_explicit_alpha_A(y, const)
+    % function of free energy to minimise
+
+    epsilon = const(1);
+    n0 = const(2);
+    d = const(3);
+    R = const(4);
+    kD = const(5);
+    kappa = const(6);
+    alpha_i = const(7);
+    N = const(8);
+    phi = const(9);
+    
+    alpha_B = y(1);
+    h_phi = y(2);
+    
+    Sigma = kD*alpha_B;
+    lambda = sqrt(kappa/Sigma);
+    r_phi = sin(phi)*R;
+    r = linspace(r_phi, d/2,N);
+    
+    [~,~,S_B, ~, lap_h, ~] = free_shape_linear_fixed_h(...
+        r, r_phi, d, phi, kappa, Sigma, h_phi);
+
+    S_A = 2*pi*R^2*(1-cos(phi));
+
+    alpha_A = S_A*(d^2/(1+alpha_i)-S_B/(1+alpha_B))^(-1)-1;
+    
+    % stretching, adhesion and bending energy
+    f = epsilon*n0*S_A./(1+alpha_A) ...
+      + kD/2*(alpha_A.^2*S_A./(1+alpha_A)+alpha_B.^2*S_B./(1+alpha_B))...
+      + kappa/2*2*pi*trapz(r, r.*lap_h.^2) + 4*pi*kappa*(1-cos(phi));
 
 end
 

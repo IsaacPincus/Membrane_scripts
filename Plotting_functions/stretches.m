@@ -19,9 +19,9 @@ axes1.YScale = yscale;
 xlabel(xaxis_name)
 ylabel(yaxis_name)
 
-% plot(vs.param_1_vals, vs.alpha_B_vals, 'displayname', '$\alpha_B$')
-plot(vs.param_1_vals, vs.alpha_B_vals, 'o',...
-    'displayname', sprintf('$R=%0.2g$ $\\mu$m, $\\zeta=%0.2g$', vs.R, vs.zeta))
+plot(vs.param_1_vals, vs.alpha_B_vals, 'displayname', '$\alpha_B$')
+% plot(vs.param_1_vals, vs.alpha_B_vals, 'o',...
+%     'displayname', sprintf('$R=%0.2g$ $\\mu$m, $\\zeta=%0.2g$', vs.R, vs.zeta))
 plot(vs.param_1_vals, vs.alpha_A_vals, 'displayname', '$\alpha_A$')
 % plot(vs.param_1_vals, zeros(size(vs.param_1_vals)), 'k--', 'HandleVisibility', 'off')
 % plot(init_vals, on*alpha_A_init, 'r-.', 'linewidth', 0.5, 'HandleVisibility','off');
