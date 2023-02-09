@@ -1,4 +1,4 @@
-clear variables
+% clear variables
 
 % constants
 R = 0.05;
@@ -29,6 +29,7 @@ phi_vals = flip(deg2rad(linspace(0.1,10,50)));
 
 E_all = zeros(6,length(phi_vals));
 
+tic
 for ii = 1:length(phi_vals)
 phi = phi_vals(ii);
 rad2deg(phi)
@@ -68,12 +69,16 @@ end
 
 %% use initial stretch to solve for minimum attachment
 % options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e3);
-options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e3, 'algorithm', 'sqp');
+% options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e3, 'algorithm', 'sqp');
+% const = [epsilon, n0, d, R, kD, kappa, alpha_i, N, phi];
+% [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
+%     fmincon(@(y) stretch_bend_min(y, const),[alpha_A_init, alpha_B_init, h_phi_init],...
+%     [],[],[],[],[-0.1,-0.1,-Inf],[0.1, 0.1, Inf], ...
+%     @(y) lipid_con_bend(y,const), options);
+
 const = [epsilon, n0, d, R, kD, kappa, alpha_i, N, phi];
 [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
-    fmincon(@(y) stretch_bend_min(y, const),[alpha_A_init, alpha_B_init, h_phi_init],...
-    [],[],[],[],[-0.1,-0.1,-Inf],[0.1, 0.1, Inf], ...
-    @(y) lipid_con_bend(y,const), options);
+    get_linear_minimum(const, [alpha_A_init, alpha_B_init, h_phi_init]);
 
 alpha_A = out(1);
 alpha_B = out(2);
@@ -204,6 +209,7 @@ annotation('textbox', [0.55,0.2,0.4,0.2], 'String',...
 end
 
 end
+toc
 
 if savedata
     save(filename);
@@ -445,5 +451,67 @@ function [c,ceq] = lipid_con_phi(y, const)
     c(1) = 0;
 
     ceq(1) = S_A./(1+alpha_A)+S_B./(1+alpha_B)-S_i/(1+alpha_i);
+
+end
+
+function [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
+    get_linear_minimum(constants, inputs)
+
+    epsilon = constants(1);
+    n0 = constants(2);
+    d = constants(3);
+    R = constants(4);
+    kD = constants(5);
+    kappa = constants(6);
+    alpha_i = constants(7);
+    N = constants(8);
+    phi = constants(9);
+    
+    alpha_A_init = inputs(1);
+    alpha_B_init = inputs(2);
+    h_phi_init = inputs(3);
+
+    S_A = 2*pi*R^2*(1-cos(phi));
+    S_B = 0;
+    S_i = d^2;
+
+    alpha_A = alpha_A_init;
+    alpha_B = alpha_B_init;
+    h_phi = h_phi_init;
+
+    options = optimset('MaxFunEvals', 1e5, 'MaxIter', 1e3, 'algorithm', 'sqp');
+
+    [out,fval,exitflag,output,lam_vals,grad,hessian] = ...
+        fmincon(@objective,[alpha_A_init, alpha_B_init, h_phi_init],...
+        [],[],[],[],[-0.1,-0.1,-Inf],[0.1, 0.1, Inf], ...
+        @constraint, options);
+
+    function f = objective(y_obj)
+
+        alpha_A = y_obj(1);
+        alpha_B = y_obj(2);
+        h_phi = y_obj(3);
+        
+        Sigma = kD*alpha_B;
+        lambda = sqrt(kappa/Sigma);
+        r_phi = sin(phi)*R;
+        r = linspace(r_phi, d/2,N);
+        
+        [~,~,S_B, ~, lap_h, ~] = free_shape_linear_fixed_h(...
+            r, r_phi, d, phi, kappa, Sigma, h_phi);
+
+        % stretching, adhesion and bending energy
+        f = epsilon*n0*S_A./(1+alpha_A) ...
+          + kD/2*(alpha_A.^2*S_A./(1+alpha_A)+alpha_B.^2*S_B./(1+alpha_B))...
+          + kappa/2*2*pi*trapz(r, r.*lap_h.^2) + 4*pi*kappa*(1-cos(phi));
+
+    end
+
+    function [c,ceq]= constraint(~)
+    
+        c(1) = 0;
+        ceq(1) = S_A./(1+alpha_A)+S_B./(1+alpha_B)-S_i/(1+alpha_i);
+    
+    end
 
 end
