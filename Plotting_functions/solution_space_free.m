@@ -1,4 +1,4 @@
-function fig_handle = solution_space(xaxis_name, xscale, yaxis_name, yscale,...
+function fig_handle = solution_space_free(xaxis_name, xscale, yaxis_name, yscale,...
     vs, patch_lims, solution_set, solution_number)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
@@ -20,7 +20,7 @@ R = vs.R_vals(solution_number);
 alpha_A_val = zeros(size(solutions));
 alpha_B_val = zeros(size(solutions));
 phi_val = zeros(size(solutions));
-h_phi_val = zeros(size(solutions));
+% h_phi_val = zeros(size(solutions));
 E_val = zeros(size(solutions));
 dist = zeros(size(solutions));
 E_dist = zeros(size(solutions));
@@ -32,7 +32,7 @@ for ii = 1:size(solutions,2)
     alpha_A_val(ii) = X(1);
     alpha_B_val(ii) = X(2);
     phi_val(ii) = X(3);
-    h_phi_val(ii) = X(4);
+%     h_phi_val(ii) = X(4);
     E_val(ii) = solutions(ii).Fval;
     dist(ii) = vecnorm(out-X);
     E_dist(ii) = E_val(ii) - fval2;
@@ -73,27 +73,27 @@ set(s_plot, 'Position', posnew);
 
 % figure();
 s_plot = subplot(2,2,2);
-hold on
-xlim([-2*R, 2*R])
-ylim([min_energy, max_energy])
-% plot(rad2deg(phi_val), E_val, 'o');
-scatter(h_phi_val, E_val,...
-    arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
-    arrayfun(@(x)length(x.X0),solutions), 'filled',...
-    'Marker', 'o');
-% c_bar = colorbar;
-% c_bar.TickLabelInterpreter = 'latex';
-% c_bar.Label.String = 'Multiplicity';
-% colormap('winter')
-% set(gca,'ColorScale','log')
-% surf(phi_val, h_phi_val, E_val);
-% plot(arrayfun(@(x)x.Fval,solutions),'k*')
-xlabel('$h_\phi$')
-ylabel('$E$')
-pos = get(s_plot, 'Position'); 
-posnew = pos;
-posnew(1) = posnew(1) - 0.03;
-set(s_plot, 'Position', posnew);
+% hold on
+% xlim([-2*R, 2*R])
+% ylim([min_energy, max_energy])
+% % plot(rad2deg(phi_val), E_val, 'o');
+% scatter(h_phi_val, E_val,...
+%     arrayfun(@(x)log(length(x.X0))*20+50,solutions),...
+%     arrayfun(@(x)length(x.X0),solutions), 'filled',...
+%     'Marker', 'o');
+% % c_bar = colorbar;
+% % c_bar.TickLabelInterpreter = 'latex';
+% % c_bar.Label.String = 'Multiplicity';
+% % colormap('winter')
+% % set(gca,'ColorScale','log')
+% % surf(phi_val, h_phi_val, E_val);
+% % plot(arrayfun(@(x)x.Fval,solutions),'k*')
+% xlabel('$h_\phi$')
+% ylabel('$E$')
+% pos = get(s_plot, 'Position'); 
+% posnew = pos;
+% posnew(1) = posnew(1) - 0.03;
+% set(s_plot, 'Position', posnew);
 
 % figure();
 s_plot = subplot(2,2,3);
