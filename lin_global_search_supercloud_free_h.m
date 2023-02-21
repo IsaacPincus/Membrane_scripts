@@ -13,17 +13,17 @@ MyTaskID = MyTaskID + 1;
 
 % generate list of independent variables to run, which should be in the
 % order [epsilon, n0, d, R, kD, kappa, alpha_i] for each row
-R_vals = 0.5;                 % um
-sigma_vals = logspace(-4,-1,30);                % surface fraction
+R_vals = [0.3];                 % um
+sigma_vals = logspace(-4,-1,6);                % surface fraction
 %d_vals = sqrt(R_vals.^2./sigma_vals);           % um
 kD_vals = 300/10^12*1e9;                        % picoJ/um^2
 kD_base = 300/10^12*1e9;                        % picoJ/um^2
-zeta_vals = logspace(-6,-1,6);                  % dimensionless
+zeta_vals = logspace(-6,-5,6);                  % dimensionless
 epsilon_vals = -zeta_vals*kD_base;              % picoJ/um^2
 n0_vals = 1;                                    % fraction
 kappa_vals = 1e-19*1e12;         % picoJ
 % kappa_vals = logspace(-21,-15, 60)*1e12;
-alpha_i_vals = 0;                            % fraction
+alpha_i_vals = 0.003;                            % fraction
 % other constants
 N = 3e5;
 
@@ -335,10 +335,10 @@ function [out,fval2,exitflag,output,solutions] = ...
         'ub', [0.1, 0.1, pi/2],...
         'nonlcon', @constraint,...
         'options', options);
-%     alpha_A_vals_inp = [-0.1, -alpha_i, -1e-3, 0, 1e-3, alpha_i, 0.1];
-%     phi_vals_inp = deg2rad([0, 5, 20, 45, 60, 85, 90]);
-    alpha_A_vals_inp = [0, 1e-3, alpha_i, 0.1];
-    phi_vals_inp = deg2rad([0,45,90]);
+    alpha_A_vals_inp = [-0.1, -alpha_i, -1e-3, 0, 1e-3, alpha_i, 0.1];
+    phi_vals_inp = deg2rad([0, 5, 20, 45, 60, 85, 90]);
+%     alpha_A_vals_inp = [0, 1e-3, alpha_i, 0.1];
+%     phi_vals_inp = deg2rad([0,45,90]);
     ptmatrix_this_run =...
             zeros(length(alpha_A_vals_inp),length(phi_vals_inp), 3);
     tic
@@ -355,7 +355,7 @@ function [out,fval2,exitflag,output,solutions] = ...
     toc
     ptmatrix = reshape(ptmatrix_this_run, [numel(ptmatrix_this_run)/3, 3]);
     tpoints = CustomStartPointSet(ptmatrix);
-    rs = RandomStartPointSet('NumStartPoints',10);
+    rs = RandomStartPointSet('NumStartPoints',100);
     gs = MultiStart("FunctionTolerance",1e-3, "XTolerance", 1e-3);
     tic
     [out,fval2,exitflag,output,solutions] = run(gs,problem, {tpoints,rs});
